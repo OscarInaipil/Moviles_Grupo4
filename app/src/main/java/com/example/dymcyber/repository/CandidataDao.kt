@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.dymcyber.model.Candidata
 import kotlinx.coroutines.flow.Flow
 
@@ -15,6 +16,9 @@ interface CandidataDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarCandidata(candidata: Candidata): Long
+
+    @Update
+    suspend fun actualizarCandidata(candidata: Candidata): Int
 
     @Query("SELECT * FROM candidatas ORDER BY id DESC")
     fun obtenerTodas(): Flow<List<Candidata>>

@@ -15,5 +15,7 @@ data class Candidata(
     val aniosExperiencia: Int,
     val perfilUrl: String,
     val estado: String = "Pendiente", // "Pendiente" o "Evaluada"
-    val fechaRegistro: Long = System.currentTimeMillis()
+    val fechaRegistro: Long = System.currentTimeMillis(),
+    val cvNombre: String? = null,
+    val cvUri: String? = null
 )

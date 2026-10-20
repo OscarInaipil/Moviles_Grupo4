@@ -17,4 +17,8 @@ class CandidataRepository(private val candidataDao: CandidataDao) {
     suspend fun obtenerPorId(id: Long): Candidata? {
         return candidataDao.obtenerPorId(id)
     }
+
+    suspend fun actualizar(candidata: Candidata): Int {
+        return candidataDao.actualizarCandidata(candidata)
+    }
 }

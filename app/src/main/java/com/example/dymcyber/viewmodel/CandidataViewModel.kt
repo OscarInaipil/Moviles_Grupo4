@@ -55,6 +55,18 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun adjuntarCv(nombreArchivo: String, uriArchivo: String) {
+        val candidataActual = _candidataSeleccionada.value ?: return
+        val candidataConCv = candidataActual.copy(
+            cvNombre = nombreArchivo,
+            cvUri = uriArchivo
+        )
+        viewModelScope.launch {
+            repository.actualizar(candidataConCv)
+            _candidataSeleccionada.value = candidataConCv
+        }
+    }
+
     private val _formulario = MutableStateFlow(FormularioRegistroState())
     val formulario: StateFlow<FormularioRegistroState> = _formulario.asStateFlow()
 
