@@ -4,7 +4,10 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +21,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Work
@@ -30,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -101,6 +107,7 @@ fun DetalleCandidataScreen(
         } else {
             ContenidoDetalle(
                 candidata = candidata,
+                alAdjuntarCv = { nombre, uri -> viewModel.adjuntarCv(nombre, uri) },
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -110,9 +117,17 @@ fun DetalleCandidataScreen(
 @Composable
 fun ContenidoDetalle(
     candidata: Candidata,
+    alAdjuntarCv: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    val selectorCv = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            guardarPermisoLectura(context, uri)
+            alAdjuntarCv(obtenerNombreArchivo(context, uri), uri.toString())
+        }
+    }
 
     Column(
         modifier = modifier
@@ -164,6 +179,11 @@ fun ContenidoDetalle(
                     titulo = "Fecha de registro",
                     valor = formatearFecha(candidata.fechaRegistro)
                 )
+                DatoCandidata(
+                    icono = Icons.Default.Description,
+                    titulo = "Currículum",
+                    valor = candidata.cvNombre ?: "Sin CV adjunto"
+                )
             }
         }
 
@@ -183,6 +203,26 @@ fun ContenidoDetalle(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Abrir perfil en el navegador")
+        }
+
+        OutlinedButton(
+            onClick = {
+                selectorCv.launch(
+                    arrayOf(
+                        "application/pdf",
+                        "application/msword",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.AttachFile,
+                contentDescription = null
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = if (candidata.cvNombre == null) "Adjuntar CV ficticio" else "Cambiar CV adjunto")
         }
     }
 }
@@ -221,6 +261,26 @@ fun abrirEnlace(context: Context, url: String) {
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, "No hay una aplicación para abrir el enlace", Toast.LENGTH_SHORT).show()
     }
+}
+
+fun guardarPermisoLectura(context: Context, uri: Uri) {
+    try {
+        context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    } catch (e: SecurityException) {
+        Toast.makeText(context, "No se pudo guardar el permiso para leer el CV", Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun obtenerNombreArchivo(context: Context, uri: Uri): String {
+    var nombre = "cv_adjunto"
+    val cursor = context.contentResolver.query(uri, null, null, null, null)
+    cursor?.use {
+        val indiceNombre = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (indiceNombre >= 0 && it.moveToFirst()) {
+            nombre = it.getString(indiceNombre)
+        }
+    }
+    return nombre
 }
 
 fun formatearFecha(milisegundos: Long): String {
