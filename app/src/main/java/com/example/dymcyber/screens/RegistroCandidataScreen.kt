@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Link
@@ -23,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -47,6 +49,7 @@ import com.example.dymcyber.viewmodel.CandidataViewModel
 @Composable
 fun RegistroCandidataScreen(
     viewModel: CandidataViewModel = viewModel(),
+    alVolver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val formulario by viewModel.formulario.collectAsState()
@@ -60,9 +63,18 @@ fun RegistroCandidataScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
+                navigationIcon = {
+                    IconButton(onClick = alVolver) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver al listado"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         },
@@ -192,7 +204,10 @@ fun RegistroCandidataScreen(
     // Diálogo de confirmación al guardar en Room
     if (formulario.guardadoExitoso) {
         AlertDialog(
-            onDismissRequest = { viewModel.reiniciarEstadoGuardado() },
+            onDismissRequest = {
+                viewModel.reiniciarEstadoGuardado()
+                alVolver()
+            },
             icon = {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
@@ -207,7 +222,12 @@ fun RegistroCandidataScreen(
                 Text(text = "La postulación ha sido guardada en la base de datos local (Room) con estado 'Pendiente de evaluación'.")
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.reiniciarEstadoGuardado() }) {
+                TextButton(
+                    onClick = {
+                        viewModel.reiniciarEstadoGuardado()
+                        alVolver()
+                    }
+                ) {
                     Text("Aceptar")
                 }
             }
