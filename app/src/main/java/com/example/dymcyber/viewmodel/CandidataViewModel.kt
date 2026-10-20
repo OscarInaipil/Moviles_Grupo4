@@ -39,12 +39,21 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     // Lista observable de candidatas para su uso en la app
-    val candidatas: StateFlow<List<Candidata>> = repository.todasLasCandidatas
+    val candidatas: StateFlow<List<Candidata>?> = repository.todasLasCandidatas
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            initialValue = null
         )
+
+    private val _candidataSeleccionada = MutableStateFlow<Candidata?>(null)
+    val candidataSeleccionada: StateFlow<Candidata?> = _candidataSeleccionada.asStateFlow()
+
+    fun cargarCandidata(id: Long) {
+        viewModelScope.launch {
+            _candidataSeleccionada.value = repository.obtenerPorId(id)
+        }
+    }
 
     private val _formulario = MutableStateFlow(FormularioRegistroState())
     val formulario: StateFlow<FormularioRegistroState> = _formulario.asStateFlow()
