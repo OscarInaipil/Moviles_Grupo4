@@ -22,10 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -224,6 +227,63 @@ fun ContenidoDetalle(
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = if (candidata.cvNombre == null) "Adjuntar CV ficticio" else "Cambiar CV adjunto")
         }
+
+        if (candidata.cvUri != null) {
+            OutlinedButton(
+                onClick = { abrirCv(context, candidata.cvUri) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Visibility,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Ver CV adjunto")
+            }
+        }
+
+        ResumenAntesDeCalificar(tieneCv = candidata.cvUri != null)
+    }
+}
+
+@Composable
+fun ResumenAntesDeCalificar(tieneCv: Boolean) {
+    val colorFondo = if (tieneCv) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.errorContainer
+    }
+    val colorTexto = if (tieneCv) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
+    val mensaje = if (tieneCv) {
+        "Antecedentes completos: la postulante está lista para pasar a calificación."
+    } else {
+        "Falta adjuntar el CV para completar los antecedentes antes de calificar."
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = colorFondo),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (tieneCv) Icons.Default.CheckCircle else Icons.Default.Info,
+                contentDescription = null,
+                tint = colorTexto
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = mensaje,
+                color = colorTexto,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }
 
@@ -260,6 +320,18 @@ fun abrirEnlace(context: Context, url: String) {
         context.startActivity(intent)
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, "No hay una aplicación para abrir el enlace", Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun abrirCv(context: Context, uriCv: String) {
+    try {
+        val uri = Uri.parse(uriCv)
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.setDataAndType(uri, context.contentResolver.getType(uri))
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "No se pudo abrir el CV en este dispositivo", Toast.LENGTH_SHORT).show()
     }
 }
 
