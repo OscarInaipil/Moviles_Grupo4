@@ -1,5 +1,7 @@
 package com.example.dymcyber.screens
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +51,12 @@ fun ListadoCandidatasScreen(
 ) {
     val candidatas = viewModel.candidatas.collectAsState().value
 
+    val estadoPantalla = when {
+        candidatas == null -> "cargando"
+        candidatas.isEmpty() -> "vacio"
+        else -> "lista"
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -73,16 +81,19 @@ fun ListadoCandidatasScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        Box(
+        Crossfade(
+            targetState = estadoPantalla,
+            animationSpec = tween(400),
+            label = "estadoListado",
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-        ) {
-            when {
-                candidatas == null -> IndicadorCarga()
-                candidatas.isEmpty() -> MensajeSinCandidatas()
+        ) { estado ->
+            when (estado) {
+                "cargando" -> IndicadorCarga()
+                "vacio" -> MensajeSinCandidatas()
                 else -> ListaCandidatas(
-                    candidatas = candidatas,
+                    candidatas = candidatas.orEmpty(),
                     alSeleccionarCandidata = alSeleccionarCandidata
                 )
             }
@@ -112,7 +123,8 @@ fun ListaCandidatas(
         items(candidatas, key = { it.id }) { candidata ->
             TarjetaCandidata(
                 candidata = candidata,
-                alPresionar = { alSeleccionarCandidata(candidata.id) }
+                alPresionar = { alSeleccionarCandidata(candidata.id) },
+                modifier = Modifier.animateItem()
             )
         }
     }
