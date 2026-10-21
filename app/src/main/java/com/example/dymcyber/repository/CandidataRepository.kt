@@ -1,12 +1,13 @@
 package com.example.dymcyber.repository
 
 import com.example.dymcyber.model.Candidata
+import com.example.dymcyber.model.Evaluacion
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Repositorio simple para intermediar entre el DAO y el ViewModel.
- */
-class CandidataRepository(private val candidataDao: CandidataDao) {
+class CandidataRepository(
+    private val candidataDao: CandidataDao,
+    private val evaluacionDao: EvaluacionDao? = null
+) {
 
     val todasLasCandidatas: Flow<List<Candidata>> = candidataDao.obtenerTodas()
 
@@ -20,5 +21,9 @@ class CandidataRepository(private val candidataDao: CandidataDao) {
 
     suspend fun actualizar(candidata: Candidata): Int {
         return candidataDao.actualizarCandidata(candidata)
+    }
+
+    suspend fun obtenerEvaluacion(candidataId: Long): Evaluacion? {
+        return evaluacionDao?.obtenerPorCandidataId(candidataId)
     }
 }

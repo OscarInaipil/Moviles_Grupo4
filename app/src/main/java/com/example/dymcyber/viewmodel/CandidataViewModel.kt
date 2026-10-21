@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dymcyber.model.Candidata
+import com.example.dymcyber.model.Evaluacion
 import com.example.dymcyber.repository.AppDatabase
 import com.example.dymcyber.repository.CandidataRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,9 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Estado que representa los valores y mensajes de error del formulario de registro.
- */
 data class FormularioRegistroState(
     val nombre: String = "",
     val nombreError: String? = null,
@@ -26,19 +24,15 @@ data class FormularioRegistroState(
     val guardadoExitoso: Boolean = false
 )
 
-/**
- * ViewModel encargado de la lógica de negocio y validación desacoplada para la HU-01.
- */
 class CandidataViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: CandidataRepository
 
     init {
-        val dao = AppDatabase.getDatabase(application).candidataDao()
-        repository = CandidataRepository(dao)
+        val db = AppDatabase.getDatabase(application)
+        repository = CandidataRepository(db.candidataDao(), db.evaluacionDao())
     }
 
-    // Lista observable de candidatas para su uso en la app
     val candidatas: StateFlow<List<Candidata>?> = repository.todasLasCandidatas
         .stateIn(
             scope = viewModelScope,
@@ -49,9 +43,13 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     private val _candidataSeleccionada = MutableStateFlow<Candidata?>(null)
     val candidataSeleccionada: StateFlow<Candidata?> = _candidataSeleccionada.asStateFlow()
 
+    private val _evaluacionCandidata = MutableStateFlow<Evaluacion?>(null)
+    val evaluacionCandidata: StateFlow<Evaluacion?> = _evaluacionCandidata.asStateFlow()
+
     fun cargarCandidata(id: Long) {
         viewModelScope.launch {
             _candidataSeleccionada.value = repository.obtenerPorId(id)
+            _evaluacionCandidata.value = repository.obtenerEvaluacion(id)
         }
     }
 
@@ -91,10 +89,6 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
         )
     }
 
-    /**
-     * Valida los campos en el ViewModel (desacoplado de los composables).
-     * Devuelve true si la información es válida e inserta en Room; false si hay errores.
-     */
     fun validarYRegistrar(): Boolean {
         val estadoActual = _formulario.value
 
@@ -102,14 +96,12 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
         var errorExperiencia: String? = null
         var errorUrl: String? = null
 
-        // Validación: Nombre obligatorio con al menos 3 caracteres
         if (estadoActual.nombre.trim().isEmpty()) {
             errorNombre = "El nombre de la postulante es obligatorio"
         } else if (estadoActual.nombre.trim().length < 3) {
             errorNombre = "El nombre debe tener al menos 3 caracteres"
         }
 
-        // Validación: Años de experiencia numérico >= 0
         val expInt = estadoActual.aniosExperiencia.trim().toIntOrNull()
         if (estadoActual.aniosExperiencia.trim().isEmpty()) {
             errorExperiencia = "Los años de experiencia son obligatorios"
@@ -117,7 +109,6 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
             errorExperiencia = "Ingrese un número válido mayor o igual a 0"
         }
 
-        // Validación: URL obligatoria con formato web válido
         if (estadoActual.perfilUrl.trim().isEmpty()) {
             errorUrl = "El enlace a perfil profesional es obligatorio"
         } else if (!estadoActual.perfilUrl.startsWith("http://") && !estadoActual.perfilUrl.startsWith("https://")) {
