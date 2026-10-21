@@ -17,9 +17,14 @@ object Rutas {
     const val LISTADO = "listado"
     const val REGISTRO = "registro"
     const val DETALLE = "detalle/{candidataId}"
+    const val EVALUACION = "evaluacion/{candidataId}"
 
     fun detalle(candidataId: Long): String {
         return "detalle/$candidataId"
+    }
+
+    fun evaluacion(candidataId: Long): String {
+        return "evaluacion/$candidataId"
     }
 }
 
@@ -75,6 +80,22 @@ fun NavegacionApp() {
             DetalleCandidataScreen(
                 candidataId = candidataId,
                 viewModel = candidataViewModel,
+                alVolver = { navController.navigateUp() },
+                alEvaluar = { id ->
+                    if (navController.currentDestination?.route?.startsWith("detalle") == true) {
+                        navController.navigate(Rutas.evaluacion(id))
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Rutas.EVALUACION,
+            arguments = listOf(navArgument("candidataId") { type = NavType.LongType })
+        ) { entrada ->
+            val candidataId = entrada.arguments?.getLong("candidataId") ?: 0L
+            MatrizEvaluacionScreen(
+                candidataId = candidataId,
                 alVolver = { navController.navigateUp() }
             )
         }

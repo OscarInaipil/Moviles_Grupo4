@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
@@ -64,6 +66,7 @@ fun DetalleCandidataScreen(
     candidataId: Long,
     viewModel: CandidataViewModel,
     alVolver: () -> Unit,
+    alEvaluar: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LaunchedEffect(candidataId) {
@@ -111,6 +114,7 @@ fun DetalleCandidataScreen(
             ContenidoDetalle(
                 candidata = candidata,
                 alAdjuntarCv = { nombre, uri -> viewModel.adjuntarCv(nombre, uri) },
+                alEvaluar = alEvaluar,
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -121,6 +125,7 @@ fun DetalleCandidataScreen(
 fun ContenidoDetalle(
     candidata: Candidata,
     alAdjuntarCv: (String, String) -> Unit,
+    alEvaluar: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -243,6 +248,25 @@ fun ContenidoDetalle(
         }
 
         ResumenAntesDeCalificar(tieneCv = candidata.cvUri != null)
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Button(
+            onClick = { alEvaluar(candidata.id) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (candidata.estado == "Evaluada") "Ver Evaluación Realizada" else "Evaluar con Matriz WIM 100",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
     }
 }
 
