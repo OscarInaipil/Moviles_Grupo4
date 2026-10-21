@@ -53,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dymcyber.viewmodel.EvaluacionViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,19 +148,30 @@ fun MatrizEvaluacionScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Evaluación Registrada (Modo Solo Lectura)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                            val detalleFecha = estado.evaluacionExistente?.let {
+                                "Evaluada el ${formatearFechaMatriz(it.fechaEvaluacion)} por ${it.evaluadoraId}."
+                            } ?: "Esta postulante ya cuenta con una evaluación registrada."
                             Text(
-                                text = "Esta postulante ya cuenta con una evaluación registrada.",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "$detalleFecha Para resguardar la inmutabilidad y evitar duplicidad, los puntajes no pueden ser modificados.",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         }
@@ -324,6 +338,18 @@ fun MatrizEvaluacionScreen(
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
+                } else {
+                    Button(
+                        onClick = alVolver,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                    ) {
+                        Text(
+                            text = "Volver al Detalle",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 }
             }
         }
@@ -434,4 +460,9 @@ fun CriterioItem(
             }
         }
     }
+}
+
+fun formatearFechaMatriz(milisegundos: Long): String {
+    val formato = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    return formato.format(Date(milisegundos))
 }
