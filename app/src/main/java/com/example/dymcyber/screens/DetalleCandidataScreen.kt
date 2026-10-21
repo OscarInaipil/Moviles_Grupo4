@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Description
@@ -42,6 +44,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -55,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.dymcyber.model.Candidata
+import com.example.dymcyber.model.Evaluacion
 import com.example.dymcyber.viewmodel.CandidataViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -74,6 +78,7 @@ fun DetalleCandidataScreen(
     }
 
     val candidata = viewModel.candidataSeleccionada.collectAsState().value
+    val evaluacion = viewModel.evaluacionCandidata.collectAsState().value
 
     Scaffold(
         topBar = {
@@ -113,6 +118,7 @@ fun DetalleCandidataScreen(
         } else {
             ContenidoDetalle(
                 candidata = candidata,
+                evaluacion = evaluacion,
                 alAdjuntarCv = { nombre, uri -> viewModel.adjuntarCv(nombre, uri) },
                 alEvaluar = alEvaluar,
                 modifier = Modifier.padding(innerPadding)
@@ -124,6 +130,7 @@ fun DetalleCandidataScreen(
 @Composable
 fun ContenidoDetalle(
     candidata: Candidata,
+    evaluacion: Evaluacion?,
     alAdjuntarCv: (String, String) -> Unit,
     alEvaluar: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -247,7 +254,11 @@ fun ContenidoDetalle(
             }
         }
 
-        ResumenAntesDeCalificar(tieneCv = candidata.cvUri != null)
+        if (evaluacion != null) {
+            TarjetaTrazabilidadEvaluacion(evaluacion = evaluacion)
+        } else {
+            ResumenAntesDeCalificar(tieneCv = candidata.cvUri != null)
+        }
 
         Spacer(modifier = Modifier.height(4.dp))
 
@@ -263,9 +274,77 @@ fun ContenidoDetalle(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (candidata.estado == "Evaluada") "Ver Evaluación Realizada" else "Evaluar con Matriz WIM 100",
+                text = if (candidata.estado == "Evaluada") "Ver Matriz de Evaluación" else "Evaluar con Matriz WIM 100",
                 style = MaterialTheme.typography.titleMedium
             )
+        }
+    }
+}
+
+@Composable
+fun TarjetaTrazabilidadEvaluacion(evaluacion: Evaluacion) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Resultado y Trazabilidad",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Text(
+                        text = "${evaluacion.puntajePromedio} / 5.0",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+            DatoCandidata(
+                icono = Icons.Default.Badge,
+                titulo = "Evaluada por",
+                valor = evaluacion.evaluadoraId
+            )
+            DatoCandidata(
+                icono = Icons.Default.DateRange,
+                titulo = "Fecha de evaluación",
+                valor = formatearFecha(evaluacion.fechaEvaluacion)
+            )
+            Text(
+                text = "Notas: Liderazgo ${evaluacion.notaLiderazgo}/5 · Trayectoria ${evaluacion.notaTrayectoria}/5 · Impacto ${evaluacion.notaImpacto}/5 · Innovación ${evaluacion.notaInnovacion}/5",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Column {
+                Text(
+                    text = "Justificación registrada:",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = evaluacion.observaciones,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
     }
 }
