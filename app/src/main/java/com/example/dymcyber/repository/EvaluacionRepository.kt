@@ -2,6 +2,7 @@ package com.example.dymcyber.repository
 
 import com.example.dymcyber.model.Candidata
 import com.example.dymcyber.model.Evaluacion
+import com.example.dymcyber.model.ResultadoEvaluacion
 import kotlinx.coroutines.flow.Flow
 
 class EvaluacionRepository(
@@ -10,6 +11,8 @@ class EvaluacionRepository(
 ) {
 
     val todasLasEvaluaciones: Flow<List<Evaluacion>> = evaluacionDao.obtenerTodas()
+
+    val resultadosConsolidados: Flow<List<ResultadoEvaluacion>> = evaluacionDao.obtenerResultadosConsolidados()
 
     suspend fun obtenerPorCandidataId(candidataId: Long): Evaluacion? {
         return evaluacionDao.obtenerPorCandidataId(candidataId)
