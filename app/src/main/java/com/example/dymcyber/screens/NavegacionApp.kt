@@ -18,6 +18,7 @@ object Rutas {
     const val REGISTRO = "registro"
     const val DETALLE = "detalle/{candidataId}"
     const val EVALUACION = "evaluacion/{candidataId}"
+    const val RESULTADOS = "resultados"
 
     fun detalle(candidataId: Long): String {
         return "detalle/$candidataId"
@@ -61,7 +62,18 @@ fun NavegacionApp() {
                     if (navController.currentDestination?.route == Rutas.LISTADO) {
                         navController.navigate(Rutas.REGISTRO)
                     }
+                },
+                alVerResultados = {
+                    if (navController.currentDestination?.route == Rutas.LISTADO) {
+                        navController.navigate(Rutas.RESULTADOS)
+                    }
                 }
+            )
+        }
+
+        composable(Rutas.RESULTADOS) {
+            ResultadosConsolidadosScreen(
+                alVolver = { navController.navigateUp() }
             )
         }
 
