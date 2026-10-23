@@ -329,12 +329,13 @@ fun MatrizEvaluacionScreen(
                 if (!estado.yaEvaluada) {
                     Button(
                         onClick = { viewModel.validarYGuardarEvaluacion() },
+                        enabled = !estado.guardando,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
                     ) {
                         Text(
-                            text = "Guardar Evaluación",
+                            text = if (estado.guardando) "Guardando..." else "Guardar Evaluación",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

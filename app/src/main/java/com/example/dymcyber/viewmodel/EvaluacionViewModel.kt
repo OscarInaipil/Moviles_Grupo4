@@ -27,6 +27,7 @@ data class MatrizEvaluacionState(
     val yaEvaluada: Boolean = false,
     val evaluacionExistente: Evaluacion? = null,
     val guardadoExitoso: Boolean = false,
+    val guardando: Boolean = false,
     val cargando: Boolean = true
 )
 
@@ -117,7 +118,7 @@ class EvaluacionViewModel(application: Application) : AndroidViewModel(applicati
         val actual = _estado.value
         val candidata = actual.candidata ?: return false
 
-        if (actual.yaEvaluada) {
+        if (actual.guardando || actual.yaEvaluada) {
             return false
         }
 
@@ -147,25 +148,34 @@ class EvaluacionViewModel(application: Application) : AndroidViewModel(applicati
             return false
         }
 
-        viewModelScope.launch {
-            val evaluacion = Evaluacion(
-                candidataId = candidata.id,
-                evaluadoraId = actual.evaluadoraId.trim(),
-                notaLiderazgo = actual.notaLiderazgo,
-                notaTrayectoria = actual.notaTrayectoria,
-                notaImpacto = actual.notaImpacto,
-                notaInnovacion = actual.notaInnovacion,
-                puntajePromedio = actual.puntajePromedio,
-                observaciones = actual.observaciones.trim()
-            )
+        _estado.value = actual.copy(guardando = true)
 
-            val guardado = evaluacionRepository.guardarEvaluacion(evaluacion, candidata)
-            if (guardado) {
-                _estado.value = _estado.value.copy(
-                    guardadoExitoso = true,
-                    yaEvaluada = true,
-                    evaluacionExistente = evaluacion
+        viewModelScope.launch {
+            try {
+                val evaluacion = Evaluacion(
+                    candidataId = candidata.id,
+                    evaluadoraId = actual.evaluadoraId.trim(),
+                    notaLiderazgo = actual.notaLiderazgo,
+                    notaTrayectoria = actual.notaTrayectoria,
+                    notaImpacto = actual.notaImpacto,
+                    notaInnovacion = actual.notaInnovacion,
+                    puntajePromedio = actual.puntajePromedio,
+                    observaciones = actual.observaciones.trim()
                 )
+
+                val guardado = evaluacionRepository.guardarEvaluacion(evaluacion, candidata)
+                if (guardado) {
+                    _estado.value = _estado.value.copy(
+                        guardadoExitoso = true,
+                        yaEvaluada = true,
+                        evaluacionExistente = evaluacion,
+                        guardando = false
+                    )
+                } else {
+                    _estado.value = _estado.value.copy(guardando = false)
+                }
+            } catch (e: Exception) {
+                _estado.value = _estado.value.copy(guardando = false)
             }
         }
 

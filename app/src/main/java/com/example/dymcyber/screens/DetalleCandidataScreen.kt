@@ -418,11 +418,13 @@ fun DatoCandidata(
 }
 
 fun abrirEnlace(context: Context, url: String) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
     try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         context.startActivity(intent)
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, "No hay una aplicación para abrir el enlace", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "No se pudo abrir el enlace", Toast.LENGTH_SHORT).show()
     }
 }
 

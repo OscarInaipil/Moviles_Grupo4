@@ -27,11 +27,15 @@ class EvaluacionRepository(
     }
 
     suspend fun guardarEvaluacion(evaluacion: Evaluacion, candidata: Candidata): Boolean {
-        if (evaluacionDao.existeEvaluacionParaCandidata(candidata.id)) {
-            return false
+        return try {
+            if (evaluacionDao.existeEvaluacionParaCandidata(candidata.id)) {
+                return false
+            }
+            evaluacionDao.insertarEvaluacion(evaluacion)
+            candidataDao.actualizarCandidata(candidata.copy(estado = "Evaluada"))
+            true
+        } catch (e: Exception) {
+            false
         }
-        evaluacionDao.insertarEvaluacion(evaluacion)
-        candidataDao.actualizarCandidata(candidata.copy(estado = "Evaluada"))
-        return true
     }
 }

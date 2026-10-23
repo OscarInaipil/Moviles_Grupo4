@@ -21,7 +21,8 @@ data class FormularioRegistroState(
     val aniosExperienciaError: String? = null,
     val perfilUrl: String = "",
     val perfilUrlError: String? = null,
-    val guardadoExitoso: Boolean = false
+    val guardadoExitoso: Boolean = false,
+    val guardando: Boolean = false
 )
 
 class CandidataViewModel(application: Application) : AndroidViewModel(application) {
@@ -92,6 +93,10 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     fun validarYRegistrar(): Boolean {
         val estadoActual = _formulario.value
 
+        if (estadoActual.guardando) {
+            return false
+        }
+
         var errorNombre: String? = null
         var errorExperiencia: String? = null
         var errorUrl: String? = null
@@ -127,15 +132,21 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
             return false
         }
 
+        _formulario.value = estadoActual.copy(guardando = true)
+
         viewModelScope.launch {
-            val nuevaCandidata = Candidata(
-                nombre = estadoActual.nombre.trim(),
-                aniosExperiencia = expInt ?: 0,
-                perfilUrl = estadoActual.perfilUrl.trim(),
-                estado = "Pendiente"
-            )
-            repository.insertar(nuevaCandidata)
-            _formulario.value = FormularioRegistroState(guardadoExitoso = true)
+            try {
+                val nuevaCandidata = Candidata(
+                    nombre = estadoActual.nombre.trim(),
+                    aniosExperiencia = expInt ?: 0,
+                    perfilUrl = estadoActual.perfilUrl.trim(),
+                    estado = "Pendiente"
+                )
+                repository.insertar(nuevaCandidata)
+                _formulario.value = FormularioRegistroState(guardadoExitoso = true, guardando = false)
+            } catch (e: Exception) {
+                _formulario.value = _formulario.value.copy(guardando = false)
+            }
         }
 
         return true

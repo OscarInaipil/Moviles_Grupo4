@@ -186,22 +186,21 @@ fun RegistroCandidataScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Botón de guardar
             Button(
                 onClick = { viewModel.validarYRegistrar() },
+                enabled = !formulario.guardando,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
             ) {
                 Text(
-                    text = "Registrar Candidata",
+                    text = if (formulario.guardando) "Registrando..." else "Registrar Candidata",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
         }
     }
 
-    // Diálogo de confirmación al guardar en Room
     if (formulario.guardadoExitoso) {
         AlertDialog(
             onDismissRequest = {
