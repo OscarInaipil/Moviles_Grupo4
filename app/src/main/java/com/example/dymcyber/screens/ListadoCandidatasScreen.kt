@@ -29,6 +29,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -103,7 +104,7 @@ fun ListadoCandidatasScreen(
         ) { estado ->
             when (estado) {
                 "cargando" -> IndicadorCarga()
-                "vacio" -> MensajeSinCandidatas()
+                "vacio" -> MensajeSinCandidatas(alCargarPrueba = { viewModel.cargarCandidatasPrueba() })
                 else -> ListaCandidatas(
                     candidatas = candidatas.orEmpty(),
                     alSeleccionarCandidata = alSeleccionarCandidata
@@ -225,7 +226,7 @@ fun IndicadorCarga() {
 }
 
 @Composable
-fun MensajeSinCandidatas() {
+fun MensajeSinCandidatas(alCargarPrueba: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -252,5 +253,9 @@ fun MensajeSinCandidatas() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        Spacer(modifier = Modifier.height(20.dp))
+        OutlinedButton(onClick = alCargarPrueba) {
+            Text("Cargar candidatas de prueba")
+        }
     }
 }

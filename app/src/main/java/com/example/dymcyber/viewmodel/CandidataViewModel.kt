@@ -155,4 +155,10 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     fun reiniciarEstadoGuardado() {
         _formulario.value = _formulario.value.copy(guardadoExitoso = false)
     }
+
+    fun cargarCandidatasPrueba() {
+        viewModelScope.launch {
+            repository.precargarCandidatasPrueba()
+        }
+    }
 }

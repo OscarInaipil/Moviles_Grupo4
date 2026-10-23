@@ -26,4 +26,28 @@ class CandidataRepository(
     suspend fun obtenerEvaluacion(candidataId: Long): Evaluacion? {
         return evaluacionDao?.obtenerPorCandidataId(candidataId)
     }
+
+    suspend fun precargarCandidatasPrueba() {
+        val listaPrueba = listOf(
+            Candidata(
+                nombre = "Elena Torres Muñoz",
+                aniosExperiencia = 8,
+                perfilUrl = "https://linkedin.com/in/elena-torres-wim",
+                estado = "Pendiente"
+            ),
+            Candidata(
+                nombre = "Valentina Vega Rojas",
+                aniosExperiencia = 5,
+                perfilUrl = "https://linkedin.com/in/valentina-vega-wim",
+                estado = "Pendiente"
+            ),
+            Candidata(
+                nombre = "Patricia Morales Silva",
+                aniosExperiencia = 12,
+                perfilUrl = "https://linkedin.com/in/patricia-morales-wim",
+                estado = "Pendiente"
+            )
+        )
+        listaPrueba.forEach { candidataDao.insertarCandidata(it) }
+    }
 }
