@@ -17,8 +17,8 @@ Permite a las evaluadoras registrar y consultar postulantes, revisar sus anteced
 ---
 
 ## 2. Integrantes del Equipo
-* **Estudiante 1:** *(Completar con Nombre y Apellido)*
-* **Estudiante 2:** *(Completar con Nombre y Apellido)*
+* **Estudiante 1:** Oscar Inaipil
+* **Estudiante 2:** Ignacio Vilches Tapia
 
 ---
 
@@ -54,3 +54,11 @@ com.example.dymcyber/
 3. Esperar la sincronización de Gradle (`Sync Project with Gradle Files`).
 4. Seleccionar un emulador Android (con API 24 o superior) o conectar un dispositivo físico con depuración USB habilitada.
 5. Presionar **Run 'app'** (`Shift + F10`).
+ 
+---
+
+## 6. Pruebas Unitarias
+El proyecto cuenta con pruebas unitarias automatizadas en JUnit para verificar la lógica de cálculo y validaciones:
+```bash
+./gradlew test
+```
