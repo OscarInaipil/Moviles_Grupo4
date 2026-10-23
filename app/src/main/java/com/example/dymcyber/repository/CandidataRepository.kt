@@ -1,0 +1,29 @@
+package com.example.dymcyber.repository
+
+import com.example.dymcyber.model.Candidata
+import com.example.dymcyber.model.Evaluacion
+import kotlinx.coroutines.flow.Flow
+
+class CandidataRepository(
+    private val candidataDao: CandidataDao,
+    private val evaluacionDao: EvaluacionDao? = null
+) {
+
+    val todasLasCandidatas: Flow<List<Candidata>> = candidataDao.obtenerTodas()
+
+    suspend fun insertar(candidata: Candidata): Long {
+        return candidataDao.insertarCandidata(candidata)
+    }
+
+    suspend fun obtenerPorId(id: Long): Candidata? {
+        return candidataDao.obtenerPorId(id)
+    }
+
+    suspend fun actualizar(candidata: Candidata): Int {
+        return candidataDao.actualizarCandidata(candidata)
+    }
+
+    suspend fun obtenerEvaluacion(candidataId: Long): Evaluacion? {
+        return evaluacionDao?.obtenerPorCandidataId(candidataId)
+    }
+}
