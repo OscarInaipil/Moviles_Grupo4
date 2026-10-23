@@ -1,5 +1,6 @@
 package com.example.dymcyber.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,10 +33,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -184,6 +192,8 @@ fun TarjetaResultado(
     resultado: ResultadoEvaluacion,
     modifier: Modifier = Modifier
 ) {
+    var mostrarObservaciones by rememberSaveable { mutableStateOf(false) }
+
     Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -228,6 +238,52 @@ fun TarjetaResultado(
                 icono = Icons.Default.DateRange,
                 titulo = "Fecha y hora de evaluación",
                 valor = formatearFecha(resultado.fechaEvaluacion)
+            )
+
+            TextButton(onClick = { mostrarObservaciones = !mostrarObservaciones }) {
+                Icon(
+                    imageVector = if (mostrarObservaciones) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = if (mostrarObservaciones) "Ocultar observaciones" else "Ver observaciones")
+            }
+
+            AnimatedVisibility(visible = mostrarObservaciones) {
+                DetalleObservaciones(resultado = resultado)
+            }
+        }
+    }
+}
+
+@Composable
+fun DetalleObservaciones(resultado: ResultadoEvaluacion) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "Notas por criterio",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Liderazgo ${resultado.notaLiderazgo}/5 · Trayectoria ${resultado.notaTrayectoria}/5 · Impacto ${resultado.notaImpacto}/5 · Innovación ${resultado.notaInnovacion}/5",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "Observaciones de la evaluadora",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = resultado.observaciones,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }
