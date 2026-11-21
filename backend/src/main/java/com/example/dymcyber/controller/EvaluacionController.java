@@ -67,6 +67,7 @@ public class EvaluacionController {
 		double suma = evaluacion.getNotaLiderazgo() + evaluacion.getNotaTrayectoria() + evaluacion.getNotaImpacto() + evaluacion.getNotaInnovacion();
 		double promedio = Math.round((suma / 4.0) * 10.0) / 10.0;
 		evaluacion.setPuntajePromedio(promedio);
+		evaluacion.setId(null);
 
 		EvaluacionEntity guardada = evaluacionRepository.save(evaluacion);
 

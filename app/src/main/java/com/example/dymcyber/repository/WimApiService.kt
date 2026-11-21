@@ -1,6 +1,7 @@
 package com.example.dymcyber.repository
 
 import com.example.dymcyber.model.Candidata
+import com.example.dymcyber.model.Evaluacion
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -25,4 +26,7 @@ interface WimApiService {
 
     @DELETE("candidatas/{id}")
     suspend fun eliminarCandidata(@Path("id") id: Long): Response<Unit>
+
+    @POST("evaluaciones")
+    suspend fun crearEvaluacion(@Body evaluacion: Evaluacion): Response<Evaluacion>
 }
