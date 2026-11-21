@@ -1,6 +1,7 @@
 package com.example.dymcyber.repository
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -8,9 +9,6 @@ import androidx.room.Update
 import com.example.dymcyber.model.Candidata
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Data Access Object (DAO) para operaciones de Room sobre la tabla candidatas.
- */
 @Dao
 interface CandidataDao {
 
@@ -19,6 +17,9 @@ interface CandidataDao {
 
     @Update
     suspend fun actualizarCandidata(candidata: Candidata): Int
+
+    @Delete
+    suspend fun eliminarCandidata(candidata: Candidata): Int
 
     @Query("SELECT * FROM candidatas ORDER BY id DESC")
     fun obtenerTodas(): Flow<List<Candidata>>

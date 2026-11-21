@@ -32,6 +32,13 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     init {
         val db = AppDatabase.getDatabase(application)
         repository = CandidataRepository(db.candidataDao(), db.evaluacionDao())
+        sincronizarCandidatas()
+    }
+
+    fun sincronizarCandidatas() {
+        viewModelScope.launch {
+            repository.sincronizarConBackend()
+        }
     }
 
     val candidatas: StateFlow<List<Candidata>?> = repository.todasLasCandidatas
