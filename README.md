@@ -1,64 +1,178 @@
-# DYM Cyber · WIM 100 – Aplicación Móvil MVP
+# DYM Cyber · WIM 100 – Aplicación Móvil
 
 **Asignatura:** DSY1105 – Desarrollo de Aplicaciones Móviles  
 **Institución:** Duoc UC – Sede San Joaquín  
 **Organización / Desafío:** DYM Cyber / Woman and Mining (WIM 100)  
+**Evaluación:** Evaluación Parcial 4 – Grupo 4  
 
 ---
 
-## 1. Descripción del Proyecto
-Este proyecto corresponde a un Producto Mínimo Viable (MVP) móvil para Android enfocado en digitalizar, ordenar y centralizar el proceso de postulación y evaluación de candidatas para el reconocimiento **WIM 100** (Woman and Mining).
+## 1. Nombre y descripción del proyecto
+**DYM Cyber · WIM 100** es una aplicación móvil Android que digitaliza, ordena y centraliza el proceso de postulación y evaluación de candidatas para el reconocimiento **WIM 100** (Woman and Mining).
 
-Permite a las evaluadoras registrar y consultar postulantes, revisar sus antecedentes (CV y enlaces a perfiles profesionales simulados), aplicar una matriz homogénea de evaluación con criterios objetivos, justificar las calificaciones con trazabilidad y prevenir evaluaciones duplicadas.
+Permite a las evaluadoras registrar y consultar postulantes, revisar sus antecedentes (CV y enlaces a perfiles profesionales simulados), aplicar una matriz homogénea de evaluación con criterios objetivos, justificar las calificaciones con trazabilidad y prevenir evaluaciones duplicadas. Los datos se guardan en el teléfono con Room y se sincronizan con un microservicio propio en Spring Boot con PostgreSQL. Además, la pantalla principal muestra indicadores económicos ligados a la minería obtenidos desde una API externa.
 
 > [!NOTE]
 > Todo el sistema opera exclusivamente con **datos ficticios, sintéticos y anonimizados**, cumpliendo con los estándares de privacidad y alcances del caso académico.
 
 ---
 
-## 2. Integrantes del Equipo
+## 2. Integrantes del equipo
 * **Estudiante 1:** Oscar Inaipil
 * **Estudiante 2:** Ignacio Vilches Tapia
 
 ---
 
-## 3. Arquitectura del Proyecto (MVVM)
-La aplicación sigue estrictamente el patrón arquitectónico **Model-View-ViewModel (MVVM)** distribuido en 4 paquetes principales bajo `com.example.dymcyber`:
+## 3. Funcionalidades
+* **Registro de candidatas** con validación de formulario (nombre, años de experiencia y enlace al perfil profesional).
+* **Listado de candidatas** con su estado (Pendiente o Evaluada) y carga de candidatas de prueba.
+* **Detalle de candidata** con sus antecedentes, apertura del perfil en el navegador y adjunto de un CV ficticio desde el selector de archivos.
+* **Eliminación de candidatas** desde el detalle, con diálogo de confirmación.
+* **Matriz de evaluación WIM 100** con cuatro criterios (liderazgo, trayectoria, impacto e innovación) de 1 a 5, cálculo automático del promedio, identificación de la evaluadora y justificación obligatoria.
+* **Prevención de evaluaciones duplicadas**: una candidata evaluada no puede volver a evaluarse.
+* **Resultados consolidados** con el ranking de candidatas evaluadas y el promedio general.
+* **Sincronización con el microservicio**: crear, consultar, actualizar y eliminar candidatas, y enviar cada evaluación al backend en el momento en que se guarda.
+* **Indicadores mineros en vivo** (libra de cobre, dólar y UF) desde la API externa mindicador.cl, con opción de reintentar si no hay conexión.
+
+---
+
+## 4. Endpoints utilizados
+
+### Microservicio propio (Spring Boot + PostgreSQL)
+URL base desde el emulador: `http://10.0.2.2:8080/api/`  
+URL base desde el computador: `http://localhost:8080/api/`
+
+| Método | Endpoint | Descripción |
+| :---: | :--- | :--- |
+| GET | `/api/candidatas` | Lista todas las candidatas |
+| GET | `/api/candidatas/{id}` | Obtiene una candidata por su id |
+| POST | `/api/candidatas` | Registra una candidata nueva |
+| PUT | `/api/candidatas/{id}` | Actualiza los datos de una candidata (por ejemplo, el CV adjunto) |
+| DELETE | `/api/candidatas/{id}` | Elimina una candidata junto con su evaluación |
+| GET | `/api/evaluaciones` | Lista las evaluaciones ordenadas por puntaje |
+| GET | `/api/evaluaciones/candidata/{candidataId}` | Obtiene la evaluación de una candidata |
+| POST | `/api/evaluaciones` | Registra la evaluación de una candidata |
+
+### API externa (mindicador.cl)
+| Método | Endpoint | Descripción |
+| :---: | :--- | :--- |
+| GET | `https://mindicador.cl/api` | Indicadores económicos de Chile. La app usa la libra de cobre, el dólar y la UF |
+
+La API externa se consume con un cliente Retrofit independiente (`IndicadoresRetrofitClient`), por lo que no interfiere con los datos locales ni con el microservicio propio.
+
+---
+
+## 5. Arquitectura del proyecto
 
 ```text
-com.example.dymcyber/
-├── model/        # Entidades Room y modelos de datos (Candidata, Evaluación, Criterios)
-├── repository/   # Base de datos Room, DAOs y Repositorios de datos
-├── viewmodel/    # Lógica de negocio, gestión de estados y validaciones desacopladas de la UI
-└── screens/      # Pantallas y componentes visuales en Jetpack Compose con Material Design 3
+Moviles_Grupo4/
+├── app/                         # Aplicación Android (Kotlin + Jetpack Compose, MVVM)
+│   ├── keystore/dymcyber.jks    # Llave para firmar el APK
+│   ├── release/                 # APK release firmado
+│   └── src/
+│       ├── main/java/com/example/dymcyber/
+│       │   ├── model/           # Entidades Room y modelos de datos
+│       │   ├── repository/      # Room, DAOs, repositorios y clientes Retrofit
+│       │   ├── viewmodel/       # Lógica de negocio y estados de cada pantalla
+│       │   └── screens/         # Pantallas en Jetpack Compose con Material Design 3
+│       └── test/                # Pruebas unitarias con JUnit, MockK y coroutines-test
+└── backend/                     # Microservicio Spring Boot con PostgreSQL
+    └── src/main/java/com/example/dymcyber/
+        ├── model/               # Entidades JPA (CandidataEntity, EvaluacionEntity)
+        ├── repository/          # Repositorios JPA
+        └── controller/          # Controladores REST
 ```
 
----
-
-## 4. Tecnologías Utilizadas
-* **Lenguaje:** Kotlin
-* **UI Framework:** Jetpack Compose con Material Design 3
-* **Persistencia Local:** Room (SQLite) con KSP
-* **Gestión de Estado y Ciclo de Vida:** ViewModel (`State` / `StateFlow`)
-* **Navegación:** Navigation Compose
-* **Recursos Nativos:** Intents del sistema y selector de archivos
+### Tecnologías utilizadas
+* **App móvil:** Kotlin, Jetpack Compose con Material Design 3, Navigation Compose, ViewModel con StateFlow, Room (SQLite) con KSP.
+* **Consumo de APIs:** Retrofit 3 y Gson.
+* **Microservicio:** Java 17, Spring Boot 4, Spring Data JPA y PostgreSQL.
+* **Pruebas unitarias:** JUnit 4, MockK y kotlinx-coroutines-test.
+* **Planificación y versiones:** GitHub y Trello.
 
 ---
 
-## 5. Instrucciones para Ejecutar el Proyecto
+## 6. Pasos para ejecutar
+
+### Requisitos
+* Android Studio (versión Ladybug o superior).
+* JDK 17 o superior.
+* PostgreSQL corriendo en el puerto `5432`.
+
+### 6.1 Base de datos
+Crear la base de datos que usa el microservicio:
+```sql
+CREATE DATABASE wim100_db;
+```
+El usuario y la contraseña se configuran en `backend/src/main/resources/application.properties` (por defecto `postgres` / `postgres`). Las tablas se crean solas al iniciar el backend.
+
+### 6.2 Microservicio
+```bash
+cd backend
+mvnw.cmd spring-boot:run
+```
+En Linux o macOS se usa `./mvnw spring-boot:run`. El backend queda disponible en `http://localhost:8080` y, la primera vez, carga tres candidatas de prueba.
+
+### 6.3 Aplicación móvil
 1. Clonar el repositorio:
    ```bash
    git clone https://github.com/OscarInaipil/Moviles_Grupo4.git
    ```
-2. Abrir la carpeta `Moviles_Grupo4` en **Android Studio** (versión Ladybug o superior recomendada).
-3. Esperar la sincronización de Gradle (`Sync Project with Gradle Files`).
-4. Seleccionar un emulador Android (con API 24 o superior) o conectar un dispositivo físico con depuración USB habilitada.
-5. Presionar **Run 'app'** (`Shift + F10`).
- 
+2. Abrir la carpeta `Moviles_Grupo4` en Android Studio y esperar la sincronización de Gradle.
+3. Seleccionar un emulador con API 24 o superior.
+4. Presionar **Run 'app'** (`Shift + F10`).
+
+> [!IMPORTANT]
+> El emulador se conecta al backend del computador a través de `10.0.2.2`. Para probar en un teléfono físico se debe cambiar `BASE_URL` en `RetrofitClient.kt` por la IP local del computador.
+
+### 6.4 Pruebas unitarias
+```bash
+gradlew test
+```
+También se pueden ejecutar desde Android Studio con clic derecho sobre `app/src/test/java` → **Run 'Tests in java'**, o con **Run with Coverage** para ver el porcentaje de cobertura.
+
+| Clase de prueba | Qué valida |
+| :--- | :--- |
+| `CandidataRepositoryTest` | Registro, sincronización, actualización y eliminación de candidatas con el backend simulado |
+| `IndicadoresRepositoryTest` | Respuestas correctas, errores y falta de conexión de la API externa |
+| `IndicadoresViewModelTest` | Carga de indicadores, mensajes de error y reintento |
+| `EvaluacionRepositoryTest` | Guardado de evaluaciones en local y en el backend, y bloqueo de duplicados |
+| `EvaluacionViewModelTest` | Carga de la candidata, recálculo del promedio y validaciones de la matriz |
+| `ResultadosViewModelTest` | Cálculo del promedio general de los resultados |
+| `CalculoEvaluacionTest` | Cálculo y redondeo de promedios |
+| `ValidacionFormulariosTest` | Reglas de validación de los formularios |
+
 ---
 
-## 6. Pruebas Unitarias
-El proyecto cuenta con pruebas unitarias automatizadas en JUnit para verificar la lógica de cálculo y validaciones:
+## 7. APK firmado y llave .jks
+El APK release se firma con la llave `app/keystore/dymcyber.jks`, configurada en el bloque `signingConfigs` de `app/build.gradle.kts`.
+
+| Dato | Valor |
+| :--- | :--- |
+| Archivo de la llave | `app/keystore/dymcyber.jks` |
+| Alias | `dymcyber` |
+| Contraseña de la llave y del almacén | `wim100grupo4` |
+| APK firmado | `app/release/app-release.apk` |
+
+La llave se generó con `keytool`:
 ```bash
-./gradlew test
+keytool -genkeypair -keystore dymcyber.jks -storetype JKS -alias dymcyber -keyalg RSA -keysize 2048 -validity 10000
 ```
+
+Para volver a generar el APK firmado: **Build → Generate Signed App Bundle or APK → APK**, seleccionar la llave `app/keystore/dymcyber.jks` con los datos de la tabla y elegir la variante `release`.
+
+### Capturas
+**APK firmado**
+
+![APK firmado](docs/capturas/apk_firmado.png)
+
+**Llave .jks**
+
+![Llave jks](docs/capturas/llave_jks.png)
+
+---
+
+## 8. Planificación en Trello
+Las tareas de la evaluación se distribuyeron entre ambos integrantes en un tablero de Trello.
+
+![Tablero de Trello](docs/capturas/trello.png)
