@@ -73,6 +73,16 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun eliminarCandidata(alTerminar: () -> Unit) {
+        val candidataActual = _candidataSeleccionada.value ?: return
+        viewModelScope.launch {
+            repository.eliminar(candidataActual)
+            _candidataSeleccionada.value = null
+            _evaluacionCandidata.value = null
+            alTerminar()
+        }
+    }
+
     private val _formulario = MutableStateFlow(FormularioRegistroState())
     val formulario: StateFlow<FormularioRegistroState> = _formulario.asStateFlow()
 

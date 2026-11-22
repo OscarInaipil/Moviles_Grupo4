@@ -2,6 +2,7 @@ package com.example.dymcyber.controller;
 
 import com.example.dymcyber.model.CandidataEntity;
 import com.example.dymcyber.repository.CandidataRepository;
+import com.example.dymcyber.repository.EvaluacionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,9 +24,11 @@ import java.util.Optional;
 public class CandidataController {
 
 	private final CandidataRepository candidataRepository;
+	private final EvaluacionRepository evaluacionRepository;
 
-	public CandidataController(CandidataRepository candidataRepository) {
+	public CandidataController(CandidataRepository candidataRepository, EvaluacionRepository evaluacionRepository) {
 		this.candidataRepository = candidataRepository;
+		this.evaluacionRepository = evaluacionRepository;
 	}
 
 	@GetMapping
@@ -57,6 +60,7 @@ public class CandidataController {
 		if (candidata.getFechaRegistro() == null) {
 			candidata.setFechaRegistro(System.currentTimeMillis());
 		}
+		candidata.setId(null);
 		CandidataEntity guardada = candidataRepository.save(candidata);
 		return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
 	}
@@ -95,6 +99,7 @@ public class CandidataController {
 		if (!candidataRepository.existsById(id)) {
 			return ResponseEntity.notFound().build();
 		}
+		evaluacionRepository.findByCandidataId(id).ifPresent(evaluacionRepository::delete);
 		candidataRepository.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

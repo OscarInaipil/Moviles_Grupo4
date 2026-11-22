@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -34,7 +35,9 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,11 +49,16 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -121,6 +129,7 @@ fun DetalleCandidataScreen(
                 evaluacion = evaluacion,
                 alAdjuntarCv = { nombre, uri -> viewModel.adjuntarCv(nombre, uri) },
                 alEvaluar = alEvaluar,
+                alEliminar = { viewModel.eliminarCandidata(alTerminar = alVolver) },
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -133,9 +142,11 @@ fun ContenidoDetalle(
     evaluacion: Evaluacion?,
     alAdjuntarCv: (String, String) -> Unit,
     alEvaluar: (Long) -> Unit,
+    alEliminar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var mostrarConfirmacion by remember { mutableStateOf(false) }
 
     val selectorCv = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -278,6 +289,44 @@ fun ContenidoDetalle(
                 style = MaterialTheme.typography.titleMedium
             )
         }
+
+        OutlinedButton(
+            onClick = { mostrarConfirmacion = true },
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "Eliminar candidata")
+        }
+    }
+
+    if (mostrarConfirmacion) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacion = false },
+            title = { Text(text = "Eliminar candidata") },
+            text = { Text(text = "Se eliminará a ${candidata.nombre} junto con su evaluación. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfirmacion = false
+                        alEliminar()
+                    }
+                ) {
+                    Text(text = "Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacion = false }) {
+                    Text(text = "Cancelar")
+                }
+            }
+        )
     }
 }
 
