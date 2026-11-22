@@ -18,11 +18,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore/dymcyber.jks")
+            storePassword = "wim100grupo4"
+            keyAlias = "dymcyber"
+            keyPassword = "wim100grupo4"
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
