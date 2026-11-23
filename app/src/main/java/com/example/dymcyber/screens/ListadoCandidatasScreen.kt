@@ -18,10 +18,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,19 +44,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dymcyber.model.Candidata
+import com.example.dymcyber.model.MindicadorRespuesta
 import com.example.dymcyber.viewmodel.CandidataViewModel
+import com.example.dymcyber.viewmodel.IndicadoresViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListadoCandidatasScreen(
     viewModel: CandidataViewModel,
+    indicadoresViewModel: IndicadoresViewModel = viewModel(),
     alSeleccionarCandidata: (Long) -> Unit,
     alAgregarCandidata: () -> Unit,
     alVerResultados: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val candidatas = viewModel.candidatas.collectAsState().value
+    val indicadores = indicadoresViewModel.indicadores.collectAsState().value
+    val cargandoIndicadores = indicadoresViewModel.cargando.collectAsState().value
+    val errorIndicadores = indicadoresViewModel.error.collectAsState().value
 
     val estadoPantalla = when {
         candidatas == null -> "cargando"
@@ -94,23 +104,171 @@ fun ListadoCandidatasScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        Crossfade(
-            targetState = estadoPantalla,
-            animationSpec = tween(400),
-            label = "estadoListado",
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-        ) { estado ->
-            when (estado) {
-                "cargando" -> IndicadorCarga()
-                "vacio" -> MensajeSinCandidatas(alCargarPrueba = { viewModel.cargarCandidatasPrueba() })
-                else -> ListaCandidatas(
-                    candidatas = candidatas.orEmpty(),
-                    alSeleccionarCandidata = alSeleccionarCandidata
-                )
+        ) {
+            TarjetaIndicadores(
+                indicadores = indicadores,
+                cargando = cargandoIndicadores,
+                error = errorIndicadores,
+                alReintentar = { indicadoresViewModel.cargarIndicadores() },
+                modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 4.dp)
+            )
+
+            Crossfade(
+                targetState = estadoPantalla,
+                animationSpec = tween(400),
+                label = "estadoListado",
+                modifier = Modifier.fillMaxSize()
+            ) { estado ->
+                when (estado) {
+                    "cargando" -> IndicadorCarga()
+                    "vacio" -> MensajeSinCandidatas(alCargarPrueba = { viewModel.cargarCandidatasPrueba() })
+                    else -> ListaCandidatas(
+                        candidatas = candidatas.orEmpty(),
+                        alSeleccionarCandidata = alSeleccionarCandidata
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+fun TarjetaIndicadores(
+    indicadores: MindicadorRespuesta?,
+    cargando: Boolean,
+    error: String?,
+    alReintentar: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Indicadores Minería (Chile)",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (cargando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    IconButton(
+                        onClick = alReintentar,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Actualizar indicadores",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            if (cargando && indicadores == null) {
+                Text(
+                    text = "Consultando servicio de indicadores...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else if (error != null && indicadores == null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "No se pudieron obtener indicadores en vivo",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    OutlinedButton(
+                        onClick = alReintentar,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text("Reintentar", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            } else if (indicadores != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    IndicadorItemVista(
+                        titulo = "Cobre",
+                        valor = indicadores.libraCobre?.valor?.let { "US$ $it" } ?: "-",
+                        subtitulo = "USD/lb"
+                    )
+                    IndicadorItemVista(
+                        titulo = "Dólar",
+                        valor = indicadores.dolar?.valor?.let { "$$it" } ?: "-",
+                        subtitulo = "CLP"
+                    )
+                    IndicadorItemVista(
+                        titulo = "UF",
+                        valor = indicadores.uf?.valor?.let { "$$it" } ?: "-",
+                        subtitulo = "CLP"
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun IndicadorItemVista(
+    titulo: String,
+    valor: String,
+    subtitulo: String
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = titulo,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = valor,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = subtitulo,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
     }
 }
 
@@ -123,7 +281,7 @@ fun ListaCandidatas(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {

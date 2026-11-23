@@ -10,14 +10,18 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
-class ResultadosViewModel(application: Application) : AndroidViewModel(application) {
-
+class ResultadosViewModel(
+    application: Application,
     private val repository: EvaluacionRepository
+) : AndroidViewModel(application) {
 
-    init {
-        val db = AppDatabase.getDatabase(application)
-        repository = EvaluacionRepository(db.evaluacionDao(), db.candidataDao())
-    }
+    constructor(application: Application) : this(
+        application,
+        EvaluacionRepository(
+            AppDatabase.getDatabase(application).evaluacionDao(),
+            AppDatabase.getDatabase(application).candidataDao()
+        )
+    )
 
     val resultados: StateFlow<List<ResultadoEvaluacion>?> = repository.resultadosConsolidados
         .stateIn(

@@ -31,16 +31,20 @@ data class MatrizEvaluacionState(
     val cargando: Boolean = true
 )
 
-class EvaluacionViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val evaluacionRepository: EvaluacionRepository
+class EvaluacionViewModel(
+    application: Application,
+    private val evaluacionRepository: EvaluacionRepository,
     private val candidataRepository: CandidataRepository
+) : AndroidViewModel(application) {
 
-    init {
-        val db = AppDatabase.getDatabase(application)
-        evaluacionRepository = EvaluacionRepository(db.evaluacionDao(), db.candidataDao())
-        candidataRepository = CandidataRepository(db.candidataDao())
-    }
+    constructor(application: Application) : this(
+        application,
+        EvaluacionRepository(
+            AppDatabase.getDatabase(application).evaluacionDao(),
+            AppDatabase.getDatabase(application).candidataDao()
+        ),
+        CandidataRepository(AppDatabase.getDatabase(application).candidataDao())
+    )
 
     private val _estado = MutableStateFlow(MatrizEvaluacionState())
     val estado: StateFlow<MatrizEvaluacionState> = _estado.asStateFlow()

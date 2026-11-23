@@ -32,6 +32,13 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     init {
         val db = AppDatabase.getDatabase(application)
         repository = CandidataRepository(db.candidataDao(), db.evaluacionDao())
+        sincronizarCandidatas()
+    }
+
+    fun sincronizarCandidatas() {
+        viewModelScope.launch {
+            repository.sincronizarConBackend()
+        }
     }
 
     val candidatas: StateFlow<List<Candidata>?> = repository.todasLasCandidatas
@@ -63,6 +70,16 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.actualizar(candidataConCv)
             _candidataSeleccionada.value = candidataConCv
+        }
+    }
+
+    fun eliminarCandidata(alTerminar: () -> Unit) {
+        val candidataActual = _candidataSeleccionada.value ?: return
+        viewModelScope.launch {
+            repository.eliminar(candidataActual)
+            _candidataSeleccionada.value = null
+            _evaluacionCandidata.value = null
+            alTerminar()
         }
     }
 

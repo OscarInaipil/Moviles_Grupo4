@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 class EvaluacionRepository(
     private val evaluacionDao: EvaluacionDao,
-    private val candidataDao: CandidataDao
+    private val candidataDao: CandidataDao,
+    private val apiService: WimApiService = RetrofitClient.wimApiService
 ) {
 
     val todasLasEvaluaciones: Flow<List<Evaluacion>> = evaluacionDao.obtenerTodas()
@@ -33,6 +34,10 @@ class EvaluacionRepository(
             }
             evaluacionDao.insertarEvaluacion(evaluacion)
             candidataDao.actualizarCandidata(candidata.copy(estado = "Evaluada"))
+            try {
+                apiService.crearEvaluacion(evaluacion)
+            } catch (e: Exception) {
+            }
             true
         } catch (e: Exception) {
             false
