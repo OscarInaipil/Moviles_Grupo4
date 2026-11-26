@@ -2,6 +2,8 @@ package com.example.dymcyber.repository
 
 import com.example.dymcyber.model.Candidata
 import com.example.dymcyber.model.Evaluacion
+import com.example.dymcyber.model.LoginRequest
+import com.example.dymcyber.model.Usuario
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -29,4 +31,7 @@ interface WimApiService {
 
     @POST("evaluaciones")
     suspend fun crearEvaluacion(@Body evaluacion: Evaluacion): Response<Evaluacion>
+
+    @POST("auth/login")
+    suspend fun iniciarSesion(@Body datos: LoginRequest): Response<Usuario>
 }

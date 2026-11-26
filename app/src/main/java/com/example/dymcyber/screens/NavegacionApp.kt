@@ -12,8 +12,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.dymcyber.viewmodel.CandidataViewModel
+import com.example.dymcyber.viewmodel.LoginViewModel
 
 object Rutas {
+    const val LOGIN = "login"
     const val LISTADO = "listado"
     const val REGISTRO = "registro"
     const val DETALLE = "detalle/{candidataId}"
@@ -33,10 +35,11 @@ object Rutas {
 fun NavegacionApp() {
     val navController = rememberNavController()
     val candidataViewModel: CandidataViewModel = viewModel()
+    val loginViewModel: LoginViewModel = viewModel()
 
     NavHost(
         navController = navController,
-        startDestination = Rutas.LISTADO,
+        startDestination = Rutas.LOGIN,
         enterTransition = {
             slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(350)) + fadeIn(tween(350))
         },
@@ -50,6 +53,19 @@ fun NavegacionApp() {
             slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(350)) + fadeOut(tween(350))
         }
     ) {
+        composable(Rutas.LOGIN) {
+            LoginScreen(
+                viewModel = loginViewModel,
+                alIngresar = {
+                    if (navController.currentDestination?.route == Rutas.LOGIN) {
+                        navController.navigate(Rutas.LISTADO) {
+                            popUpTo(Rutas.LOGIN) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
         composable(Rutas.LISTADO) {
             ListadoCandidatasScreen(
                 viewModel = candidataViewModel,
@@ -66,6 +82,12 @@ fun NavegacionApp() {
                 alVerResultados = {
                     if (navController.currentDestination?.route == Rutas.LISTADO) {
                         navController.navigate(Rutas.RESULTADOS)
+                    }
+                },
+                alCerrarSesion = {
+                    loginViewModel.cerrarSesion()
+                    navController.navigate(Rutas.LOGIN) {
+                        popUpTo(navController.graph.id) { inclusive = true }
                     }
                 }
             )

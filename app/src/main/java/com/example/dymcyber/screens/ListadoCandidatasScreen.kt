@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
@@ -58,6 +59,7 @@ fun ListadoCandidatasScreen(
     alSeleccionarCandidata: (Long) -> Unit,
     alAgregarCandidata: () -> Unit,
     alVerResultados: () -> Unit,
+    alCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val candidatas = viewModel.candidatas.collectAsState().value
@@ -85,6 +87,12 @@ fun ListadoCandidatasScreen(
                         Icon(
                             imageVector = Icons.Default.Assessment,
                             contentDescription = "Ver resultados consolidados"
+                        )
+                    }
+                    IconButton(onClick = alCerrarSesion) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Cerrar sesión"
                         )
                     }
                 },
