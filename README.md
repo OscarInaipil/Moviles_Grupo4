@@ -24,6 +24,7 @@ Permite a las evaluadoras registrar y consultar postulantes, revisar sus anteced
 ---
 
 ## 3. Funcionalidades
+* **Inicio de sesión de evaluadoras** validado contra el microservicio, con contraseñas encriptadas y botón para cerrar sesión.
 * **Registro de candidatas** con validación de formulario (nombre, años de experiencia y enlace al perfil profesional).
 * **Listado de candidatas** con su estado (Pendiente o Evaluada) y carga de candidatas de prueba.
 * **Detalle de candidata** con sus antecedentes, apertura del perfil en el navegador y adjunto de un CV ficticio desde el selector de archivos.
@@ -52,6 +53,7 @@ URL base desde el computador: `http://localhost:8080/api/`
 | GET | `/api/evaluaciones` | Lista las evaluaciones ordenadas por puntaje |
 | GET | `/api/evaluaciones/candidata/{candidataId}` | Obtiene la evaluación de una candidata |
 | POST | `/api/evaluaciones` | Registra la evaluación de una candidata |
+| POST | `/api/auth/login` | Valida el correo y la contraseña de una evaluadora |
 
 ### API externa (mindicador.cl)
 | Método | Endpoint | Descripción |
@@ -78,9 +80,10 @@ Moviles_Grupo4/
 │       └── test/                # Pruebas unitarias con JUnit, MockK y coroutines-test
 └── backend/                     # Microservicio Spring Boot con PostgreSQL
     └── src/main/java/com/example/dymcyber/
-        ├── model/               # Entidades JPA (CandidataEntity, EvaluacionEntity)
+        ├── model/               # Entidades JPA (CandidataEntity, EvaluacionEntity, UsuarioEntity)
         ├── repository/          # Repositorios JPA
-        └── controller/          # Controladores REST
+        ├── controller/          # Controladores REST
+        └── util/                # Encriptación de contraseñas
 ```
 
 ### Tecnologías utilizadas
@@ -111,7 +114,7 @@ El usuario y la contraseña se configuran en `backend/src/main/resources/applica
 cd backend
 mvnw.cmd spring-boot:run
 ```
-En Linux o macOS se usa `./mvnw spring-boot:run`. El backend queda disponible en `http://localhost:8080` y, la primera vez, carga tres candidatas de prueba.
+En Linux o macOS se usa `./mvnw spring-boot:run`. El backend queda disponible en `http://localhost:8080` y, la primera vez, carga tres candidatas y dos evaluadoras de prueba.
 
 ### 6.3 Aplicación móvil
 1. Clonar el repositorio:
@@ -124,6 +127,14 @@ En Linux o macOS se usa `./mvnw spring-boot:run`. El backend queda disponible en
 
 > [!IMPORTANT]
 > El emulador se conecta al backend del computador a través de `10.0.2.2`. Para probar en un teléfono físico se debe cambiar `BASE_URL` en `RetrofitClient.kt` por la IP local del computador.
+
+### Usuarios de prueba
+| Correo | Contraseña | Código de evaluadora |
+| :--- | :--- | :--- |
+| `evaluadora1@wim100.cl` | `wim2026` | EVA-01 |
+| `evaluadora2@wim100.cl` | `wim2026` | EVA-02 |
+
+Las contraseñas se guardan encriptadas con SHA-256 en la tabla `usuarios`.
 
 ### 6.4 Pruebas unitarias
 ```bash
@@ -141,6 +152,8 @@ También se pueden ejecutar desde Android Studio con clic derecho sobre `app/src
 | `ResultadosViewModelTest` | Cálculo del promedio general de los resultados |
 | `CalculoEvaluacionTest` | Cálculo y redondeo de promedios |
 | `ValidacionFormulariosTest` | Reglas de validación de los formularios |
+| `LoginViewModelTest` | Validaciones del login, ingreso correcto, credenciales incorrectas, falta de conexión y cierre de sesión |
+| `UsuarioRepositoryTest` | Respuesta del backend al iniciar sesión |
 
 ---
 
