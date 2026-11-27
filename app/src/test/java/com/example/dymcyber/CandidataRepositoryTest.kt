@@ -1,17 +1,17 @@
 package com.example.dymcyber
 
 import com.example.dymcyber.model.Candidata
-import com.example.dymcyber.repository.CandidataDao
 import com.example.dymcyber.repository.CandidataRepository
 import com.example.dymcyber.repository.WimApiService
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Response
@@ -19,7 +19,6 @@ import java.io.IOException
 
 class CandidataRepositoryTest {
 
-    private lateinit var candidataDao: CandidataDao
     private lateinit var apiService: WimApiService
     private lateinit var repository: CandidataRepository
 
@@ -32,78 +31,49 @@ class CandidataRepositoryTest {
 
     @Before
     fun configurar() {
-        candidataDao = mockk(relaxed = true)
         apiService = mockk()
-        every { candidataDao.obtenerTodas() } returns flowOf(emptyList())
-        repository = CandidataRepository(candidataDao, null, apiService)
+        repository = CandidataRepository(apiService)
     }
 
     @Test
-    fun insertarGuardaEnLocalYEnviaAlBackendConElIdLocal() = runTest {
-        coEvery { candidataDao.insertarCandidata(any()) } returns 5L
-        coEvery { apiService.crearCandidata(any()) } returns Response.success(candidataPrueba)
-
-        val id = repository.insertar(candidataPrueba.copy(id = 0))
-
-        assertEquals(5L, id)
-        coVerify { apiService.crearCandidata(match { it.id == 5L }) }
-    }
-
-    @Test
-    fun insertarRetornaElIdLocalAunqueFalleElBackend() = runTest {
-        coEvery { candidataDao.insertarCandidata(any()) } returns 7L
-        coEvery { apiService.crearCandidata(any()) } throws IOException("sin conexion")
-
-        val id = repository.insertar(candidataPrueba.copy(id = 0))
-
-        assertEquals(7L, id)
-    }
-
-    @Test
-    fun sincronizarInsertaLasCandidatasNuevasDelBackend() = runTest {
+    fun obtenerTodasRetornaListaCuandoBackendRespondeBien() = runTest {
         coEvery { apiService.obtenerCandidatas() } returns Response.success(listOf(candidataPrueba))
-        coEvery { candidataDao.obtenerPorId(1L) } returns null
 
-        repository.sincronizarConBackend()
+        val resultado = repository.obtenerTodas()
 
-        coVerify { candidataDao.insertarCandidata(candidataPrueba) }
+        assertEquals(1, resultado.size)
+        assertEquals("Elena Torres", resultado[0].nombre)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun obtenerTodasLanzaExcepcionSiBackendFalla() = runTest {
+        coEvery { apiService.obtenerCandidatas() } returns Response.error<List<Candidata>>(500, "".toResponseBody())
+
+        repository.obtenerTodas()
     }
 
     @Test
-    fun sincronizarActualizaLasCandidatasQueYaExisten() = runTest {
-        coEvery { apiService.obtenerCandidatas() } returns Response.success(listOf(candidataPrueba))
-        coEvery { candidataDao.obtenerPorId(1L) } returns candidataPrueba
+    fun insertarRetornaCandidataCreadaConIdDelServidor() = runTest {
+        val creadaEnServidor = candidataPrueba.copy(id = 4L)
+        coEvery { apiService.crearCandidata(any()) } returns Response.success(creadaEnServidor)
 
-        repository.sincronizarConBackend()
+        val resultado = repository.insertar(candidataPrueba.copy(id = 0L))
 
-        coVerify { candidataDao.actualizarCandidata(candidataPrueba) }
+        assertEquals(4L, resultado?.id)
     }
 
     @Test
-    fun sincronizarSinConexionNoModificaLaBaseLocal() = runTest {
-        coEvery { apiService.obtenerCandidatas() } throws IOException("sin conexion")
+    fun insertarRetornaNullSiBackendRechaza() = runTest {
+        coEvery { apiService.crearCandidata(any()) } returns Response.error<Candidata>(400, "".toResponseBody())
 
-        repository.sincronizarConBackend()
+        val resultado = repository.insertar(candidataPrueba)
 
-        coVerify(exactly = 0) { candidataDao.insertarCandidata(any()) }
-        coVerify(exactly = 0) { candidataDao.actualizarCandidata(any()) }
+        assertNull(resultado)
     }
 
     @Test
-    fun obtenerPorIdUsaLosDatosDelBackendCuandoResponde() = runTest {
-        val remota = candidataPrueba.copy(estado = "Evaluada")
-        coEvery { apiService.obtenerCandidataPorId(1L) } returns Response.success(remota)
-
-        val resultado = repository.obtenerPorId(1L)
-
-        assertEquals("Evaluada", resultado?.estado)
-        coVerify { candidataDao.actualizarCandidata(remota) }
-    }
-
-    @Test
-    fun obtenerPorIdUsaLaBaseLocalSiFallaElBackend() = runTest {
-        coEvery { apiService.obtenerCandidataPorId(1L) } throws IOException("sin conexion")
-        coEvery { candidataDao.obtenerPorId(1L) } returns candidataPrueba
+    fun obtenerPorIdRetornaCandidataCuandoExiste() = runTest {
+        coEvery { apiService.obtenerCandidataPorId(1L) } returns Response.success(candidataPrueba)
 
         val resultado = repository.obtenerPorId(1L)
 
@@ -111,42 +81,49 @@ class CandidataRepositoryTest {
     }
 
     @Test
-    fun actualizarModificaLaBaseLocalYElBackend() = runTest {
-        coEvery { candidataDao.actualizarCandidata(any()) } returns 1
-        coEvery { apiService.actualizarCandidata(1L, any()) } returns Response.success(candidataPrueba)
+    fun obtenerPorIdRetornaNullCuandoNoExiste() = runTest {
+        coEvery { apiService.obtenerCandidataPorId(99L) } returns Response.error<Candidata>(404, "".toResponseBody())
 
-        val filas = repository.actualizar(candidataPrueba)
-
-        assertEquals(1, filas)
-        coVerify { apiService.actualizarCandidata(1L, candidataPrueba) }
-    }
-
-    @Test
-    fun eliminarBorraEnLaBaseLocalYEnElBackend() = runTest {
-        coEvery { candidataDao.eliminarCandidata(any()) } returns 1
-        coEvery { apiService.eliminarCandidata(1L) } returns Response.success(Unit)
-
-        val filas = repository.eliminar(candidataPrueba)
-
-        assertEquals(1, filas)
-        coVerify { apiService.eliminarCandidata(1L) }
-    }
-
-    @Test
-    fun obtenerEvaluacionSinDaoDeEvaluacionesRetornaNull() = runTest {
-        val resultado = repository.obtenerEvaluacion(1L)
+        val resultado = repository.obtenerPorId(99L)
 
         assertNull(resultado)
     }
 
     @Test
-    fun precargarCandidatasPruebaInsertaTresCandidatas() = runTest {
-        coEvery { candidataDao.insertarCandidata(any()) } returns 1L
-        coEvery { apiService.crearCandidata(any()) } returns Response.success(candidataPrueba)
+    fun actualizarRetornaCandidataActualizada() = runTest {
+        val conCv = candidataPrueba.copy(cvNombre = "cv.pdf")
+        coEvery { apiService.actualizarCandidata(1L, any()) } returns Response.success(conCv)
 
-        repository.precargarCandidatasPrueba()
+        val resultado = repository.actualizar(conCv)
 
-        coVerify(exactly = 3) { candidataDao.insertarCandidata(any()) }
-        coVerify(exactly = 3) { apiService.crearCandidata(any()) }
+        assertEquals("cv.pdf", resultado?.cvNombre)
+    }
+
+    @Test
+    fun eliminarRetornaTrueCuandoBackendRespondeOk() = runTest {
+        coEvery { apiService.eliminarCandidata(1L) } returns Response.success(Unit)
+
+        val resultado = repository.eliminar(1L)
+
+        assertTrue(resultado)
+        coVerify { apiService.eliminarCandidata(1L) }
+    }
+
+    @Test
+    fun eliminarRetornaFalseCuandoNoExisteEnBackend() = runTest {
+        coEvery { apiService.eliminarCandidata(1L) } returns Response.error<Unit>(404, "".toResponseBody())
+
+        val resultado = repository.eliminar(1L)
+
+        assertFalse(resultado)
+    }
+
+    @Test
+    fun obtenerEvaluacionRetornaNullSiNoHayConexion() = runTest {
+        coEvery { apiService.obtenerEvaluacionPorCandidata(1L) } throws IOException("sin conexion")
+
+        val resultado = repository.obtenerEvaluacion(1L)
+
+        assertNull(resultado)
     }
 }

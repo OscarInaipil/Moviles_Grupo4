@@ -1,34 +1,37 @@
 package com.example.dymcyber.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dymcyber.model.ResultadoEvaluacion
-import com.example.dymcyber.repository.AppDatabase
 import com.example.dymcyber.repository.EvaluacionRepository
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class ResultadosViewModel(
-    application: Application,
-    private val repository: EvaluacionRepository
-) : AndroidViewModel(application) {
+    private val repository: EvaluacionRepository = EvaluacionRepository()
+) : ViewModel() {
 
-    constructor(application: Application) : this(
-        application,
-        EvaluacionRepository(
-            AppDatabase.getDatabase(application).evaluacionDao(),
-            AppDatabase.getDatabase(application).candidataDao()
-        )
-    )
+    private val _resultados = MutableStateFlow<List<ResultadoEvaluacion>?>(null)
+    val resultados: StateFlow<List<ResultadoEvaluacion>?> = _resultados.asStateFlow()
 
-    val resultados: StateFlow<List<ResultadoEvaluacion>?> = repository.resultadosConsolidados
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    fun cargarResultados() {
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                _resultados.value = repository.obtenerResultadosConsolidados()
+            } catch (e: Exception) {
+                _error.value = "No se pudieron cargar los resultados desde el servidor"
+                if (_resultados.value == null) {
+                    _resultados.value = emptyList()
+                }
+            }
+        }
+    }
 
     fun calcularPromedioGeneral(lista: List<ResultadoEvaluacion>): Double {
         if (lista.isEmpty()) {

@@ -62,13 +62,15 @@ import java.util.Locale
 fun MatrizEvaluacionScreen(
     candidataId: Long,
     alVolver: () -> Unit,
+    codigoEvaluadora: String = "",
+    alEvaluacionGuardada: () -> Unit = {},
     viewModel: EvaluacionViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
     val estado by viewModel.estado.collectAsState()
 
     LaunchedEffect(candidataId) {
-        viewModel.cargarCandidata(candidataId)
+        viewModel.cargarCandidata(candidataId, codigoEvaluadora)
     }
 
     Scaffold(
@@ -251,7 +253,7 @@ fun MatrizEvaluacionScreen(
                                 label = "animacionPromedio"
                             ) { promedio ->
                                 Text(
-                                    text = String.format("%.1f", promedio),
+                                    text = String.format(Locale.US, "%.1f", promedio),
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimary,
@@ -324,12 +326,21 @@ fun MatrizEvaluacionScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                if (estado.errorServidor != null) {
+                    Text(
+                        text = estado.errorServidor ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (!estado.yaEvaluada) {
                     Button(
-                        onClick = { viewModel.validarYGuardarEvaluacion() },
-                        enabled = !estado.guardando,
+                        onClick = { viewModel.validarYGuardarEvaluacion(alGuardar = alEvaluacionGuardada) },
+                        enabled = !estado.guardando && estado.candidata != null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
@@ -374,7 +385,7 @@ fun MatrizEvaluacionScreen(
             },
             text = {
                 Text(
-                    text = "La evaluación de ${estado.candidata?.nombre} ha sido guardada con un promedio de ${String.format("%.1f", estado.puntajePromedio)}. La postulación pasó al estado Evaluada."
+                    text = "La evaluación de ${estado.candidata?.nombre} ha sido guardada con un promedio de ${String.format(Locale.US, "%.1f", estado.puntajePromedio)}. La postulación pasó al estado Evaluada."
                 )
             },
             confirmButton = {

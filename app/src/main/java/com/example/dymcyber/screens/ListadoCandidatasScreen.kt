@@ -63,12 +63,14 @@ fun ListadoCandidatasScreen(
     modifier: Modifier = Modifier
 ) {
     val candidatas = viewModel.candidatas.collectAsState().value
+    val errorLista = viewModel.errorLista.collectAsState().value
     val indicadores = indicadoresViewModel.indicadores.collectAsState().value
     val cargandoIndicadores = indicadoresViewModel.cargando.collectAsState().value
     val errorIndicadores = indicadoresViewModel.error.collectAsState().value
 
     val estadoPantalla = when {
         candidatas == null -> "cargando"
+        errorLista != null && candidatas.isEmpty() -> "error"
         candidatas.isEmpty() -> "vacio"
         else -> "lista"
     }
@@ -133,6 +135,10 @@ fun ListadoCandidatasScreen(
             ) { estado ->
                 when (estado) {
                     "cargando" -> IndicadorCarga()
+                    "error" -> MensajeErrorServidor(
+                        mensaje = errorLista ?: "No se pudo conectar con el servidor",
+                        alReintentar = { viewModel.cargarCandidatas() }
+                    )
                     "vacio" -> MensajeSinCandidatas(alCargarPrueba = { viewModel.cargarCandidatasPrueba() })
                     else -> ListaCandidatas(
                         candidatas = candidatas.orEmpty(),
@@ -422,6 +428,38 @@ fun MensajeSinCandidatas(alCargarPrueba: () -> Unit) {
         Spacer(modifier = Modifier.height(20.dp))
         OutlinedButton(onClick = alCargarPrueba) {
             Text("Cargar candidatas de prueba")
+        }
+    }
+}
+
+@Composable
+fun MensajeErrorServidor(
+    mensaje: String,
+    alReintentar: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(56.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = mensaje,
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedButton(onClick = alReintentar) {
+            Text("Reintentar conexión")
         }
     }
 }

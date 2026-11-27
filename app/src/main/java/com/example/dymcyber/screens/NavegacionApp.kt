@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -36,6 +38,7 @@ fun NavegacionApp() {
     val navController = rememberNavController()
     val candidataViewModel: CandidataViewModel = viewModel()
     val loginViewModel: LoginViewModel = viewModel()
+    val loginState by loginViewModel.estado.collectAsState()
 
     NavHost(
         navController = navController,
@@ -58,6 +61,7 @@ fun NavegacionApp() {
                 viewModel = loginViewModel,
                 alIngresar = {
                     if (navController.currentDestination?.route == Rutas.LOGIN) {
+                        candidataViewModel.cargarCandidatas()
                         navController.navigate(Rutas.LISTADO) {
                             popUpTo(Rutas.LOGIN) { inclusive = true }
                         }
@@ -85,6 +89,7 @@ fun NavegacionApp() {
                     }
                 },
                 alCerrarSesion = {
+                    candidataViewModel.limpiarEstado()
                     loginViewModel.cerrarSesion()
                     navController.navigate(Rutas.LOGIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
@@ -130,6 +135,8 @@ fun NavegacionApp() {
             val candidataId = entrada.arguments?.getLong("candidataId") ?: 0L
             MatrizEvaluacionScreen(
                 candidataId = candidataId,
+                codigoEvaluadora = loginState.usuario?.codigoEvaluadora.orEmpty(),
+                alEvaluacionGuardada = { candidataViewModel.cargarCandidatas() },
                 alVolver = { navController.navigateUp() }
             )
         }

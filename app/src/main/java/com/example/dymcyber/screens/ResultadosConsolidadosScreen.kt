@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,10 +59,16 @@ fun ResultadosConsolidadosScreen(
     viewModel: ResultadosViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.cargarResultados()
+    }
+
     val resultados = viewModel.resultados.collectAsState().value
+    val error = viewModel.error.collectAsState().value
 
     val estadoPantalla = when {
         resultados == null -> "cargando"
+        error != null && resultados.isEmpty() -> "error"
         resultados.isEmpty() -> "vacio"
         else -> "lista"
     }
@@ -102,6 +109,10 @@ fun ResultadosConsolidadosScreen(
         ) { estado ->
             when (estado) {
                 "cargando" -> IndicadorCarga()
+                "error" -> MensajeErrorServidor(
+                    mensaje = error ?: "No se pudieron cargar los resultados",
+                    alReintentar = { viewModel.cargarResultados() }
+                )
                 "vacio" -> MensajeSinEvaluadas()
                 else -> ListaResultados(
                     resultados = resultados.orEmpty(),

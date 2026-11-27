@@ -1,17 +1,13 @@
 package com.example.dymcyber.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dymcyber.model.Candidata
 import com.example.dymcyber.model.Evaluacion
-import com.example.dymcyber.repository.AppDatabase
 import com.example.dymcyber.repository.CandidataRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class FormularioRegistroState(
@@ -21,32 +17,20 @@ data class FormularioRegistroState(
     val aniosExperienciaError: String? = null,
     val perfilUrl: String = "",
     val perfilUrlError: String? = null,
+    val errorServidor: String? = null,
     val guardadoExitoso: Boolean = false,
     val guardando: Boolean = false
 )
 
-class CandidataViewModel(application: Application) : AndroidViewModel(application) {
+class CandidataViewModel(
+    private val repository: CandidataRepository = CandidataRepository()
+) : ViewModel() {
 
-    private val repository: CandidataRepository
+    private val _candidatas = MutableStateFlow<List<Candidata>?>(null)
+    val candidatas: StateFlow<List<Candidata>?> = _candidatas.asStateFlow()
 
-    init {
-        val db = AppDatabase.getDatabase(application)
-        repository = CandidataRepository(db.candidataDao(), db.evaluacionDao())
-        sincronizarCandidatas()
-    }
-
-    fun sincronizarCandidatas() {
-        viewModelScope.launch {
-            repository.sincronizarConBackend()
-        }
-    }
-
-    val candidatas: StateFlow<List<Candidata>?> = repository.todasLasCandidatas
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _errorLista = MutableStateFlow<String?>(null)
+    val errorLista: StateFlow<String?> = _errorLista.asStateFlow()
 
     private val _candidataSeleccionada = MutableStateFlow<Candidata?>(null)
     val candidataSeleccionada: StateFlow<Candidata?> = _candidataSeleccionada.asStateFlow()
@@ -54,10 +38,42 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     private val _evaluacionCandidata = MutableStateFlow<Evaluacion?>(null)
     val evaluacionCandidata: StateFlow<Evaluacion?> = _evaluacionCandidata.asStateFlow()
 
+    private val _errorDetalle = MutableStateFlow<String?>(null)
+    val errorDetalle: StateFlow<String?> = _errorDetalle.asStateFlow()
+
+    private val _formulario = MutableStateFlow(FormularioRegistroState())
+    val formulario: StateFlow<FormularioRegistroState> = _formulario.asStateFlow()
+
+    fun cargarCandidatas() {
+        viewModelScope.launch {
+            _errorLista.value = null
+            try {
+                _candidatas.value = repository.obtenerTodas()
+            } catch (e: Exception) {
+                _errorLista.value = "No se pudo conectar con el servidor"
+                if (_candidatas.value == null) {
+                    _candidatas.value = emptyList()
+                }
+            }
+        }
+    }
+
     fun cargarCandidata(id: Long) {
         viewModelScope.launch {
-            _candidataSeleccionada.value = repository.obtenerPorId(id)
-            _evaluacionCandidata.value = repository.obtenerEvaluacion(id)
+            _candidataSeleccionada.value = null
+            _evaluacionCandidata.value = null
+            _errorDetalle.value = null
+            try {
+                val encontrada = repository.obtenerPorId(id)
+                if (encontrada != null) {
+                    _candidataSeleccionada.value = encontrada
+                    _evaluacionCandidata.value = repository.obtenerEvaluacion(id)
+                } else {
+                    _errorDetalle.value = "No se encontró la candidata en el servidor"
+                }
+            } catch (e: Exception) {
+                _errorDetalle.value = "No se pudo conectar con el servidor"
+            }
         }
     }
 
@@ -68,42 +84,58 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
             cvUri = uriArchivo
         )
         viewModelScope.launch {
-            repository.actualizar(candidataConCv)
-            _candidataSeleccionada.value = candidataConCv
+            try {
+                val actualizada = repository.actualizar(candidataConCv)
+                if (actualizada != null) {
+                    _candidataSeleccionada.value = actualizada
+                    cargarCandidatas()
+                }
+            } catch (e: Exception) {
+                _errorDetalle.value = "No se pudo actualizar el CV en el servidor"
+            }
         }
     }
 
     fun eliminarCandidata(alTerminar: () -> Unit) {
         val candidataActual = _candidataSeleccionada.value ?: return
         viewModelScope.launch {
-            repository.eliminar(candidataActual)
-            _candidataSeleccionada.value = null
-            _evaluacionCandidata.value = null
-            alTerminar()
+            try {
+                val eliminada = repository.eliminar(candidataActual.id)
+                if (eliminada) {
+                    _candidataSeleccionada.value = null
+                    _evaluacionCandidata.value = null
+                    cargarCandidatas()
+                    alTerminar()
+                } else {
+                    _errorDetalle.value = "No se pudo eliminar la candidata"
+                }
+            } catch (e: Exception) {
+                _errorDetalle.value = "No se pudo conectar con el servidor"
+            }
         }
     }
-
-    private val _formulario = MutableStateFlow(FormularioRegistroState())
-    val formulario: StateFlow<FormularioRegistroState> = _formulario.asStateFlow()
 
     fun onNombreChange(nuevoNombre: String) {
         _formulario.value = _formulario.value.copy(
             nombre = nuevoNombre,
-            nombreError = null
+            nombreError = null,
+            errorServidor = null
         )
     }
 
     fun onAniosExperienciaChange(nuevosAnios: String) {
         _formulario.value = _formulario.value.copy(
             aniosExperiencia = nuevosAnios,
-            aniosExperienciaError = null
+            aniosExperienciaError = null,
+            errorServidor = null
         )
     }
 
     fun onPerfilUrlChange(nuevaUrl: String) {
         _formulario.value = _formulario.value.copy(
             perfilUrl = nuevaUrl,
-            perfilUrlError = null
+            perfilUrlError = null,
+            errorServidor = null
         )
     }
 
@@ -149,7 +181,7 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
             return false
         }
 
-        _formulario.value = estadoActual.copy(guardando = true)
+        _formulario.value = estadoActual.copy(guardando = true, errorServidor = null)
 
         viewModelScope.launch {
             try {
@@ -159,10 +191,21 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
                     perfilUrl = estadoActual.perfilUrl.trim(),
                     estado = "Pendiente"
                 )
-                repository.insertar(nuevaCandidata)
-                _formulario.value = FormularioRegistroState(guardadoExitoso = true, guardando = false)
+                val creada = repository.insertar(nuevaCandidata)
+                if (creada != null) {
+                    _formulario.value = FormularioRegistroState(guardadoExitoso = true, guardando = false)
+                    cargarCandidatas()
+                } else {
+                    _formulario.value = _formulario.value.copy(
+                        guardando = false,
+                        errorServidor = "El servidor rechazó el registro"
+                    )
+                }
             } catch (e: Exception) {
-                _formulario.value = _formulario.value.copy(guardando = false)
+                _formulario.value = _formulario.value.copy(
+                    guardando = false,
+                    errorServidor = "No se pudo conectar con el servidor"
+                )
             }
         }
 
@@ -176,6 +219,16 @@ class CandidataViewModel(application: Application) : AndroidViewModel(applicatio
     fun cargarCandidatasPrueba() {
         viewModelScope.launch {
             repository.precargarCandidatasPrueba()
+            cargarCandidatas()
         }
+    }
+
+    fun limpiarEstado() {
+        _candidatas.value = null
+        _errorLista.value = null
+        _candidataSeleccionada.value = null
+        _evaluacionCandidata.value = null
+        _errorDetalle.value = null
+        _formulario.value = FormularioRegistroState()
     }
 }

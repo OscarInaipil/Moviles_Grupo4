@@ -37,14 +37,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dymcyber.viewmodel.CandidataViewModel
 
-/**
- * Pantalla de registro de candidatas para el flujo inicial de WIM 100 (HU-01).
- * Implementa validación visual con íconos de error desacoplada en el ViewModel.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroCandidataScreen(
@@ -101,7 +98,6 @@ fun RegistroCandidataScreen(
                 )
             }
 
-            // Campo: Nombre de la candidata
             OutlinedTextField(
                 value = formulario.nombre,
                 onValueChange = viewModel::onNombreChange,
@@ -128,7 +124,6 @@ fun RegistroCandidataScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo: Años de experiencia
             OutlinedTextField(
                 value = formulario.aniosExperiencia,
                 onValueChange = viewModel::onAniosExperienciaChange,
@@ -156,7 +151,6 @@ fun RegistroCandidataScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo: URL de perfil simulado
             OutlinedTextField(
                 value = formulario.perfilUrl,
                 onValueChange = viewModel::onPerfilUrlChange,
@@ -183,6 +177,16 @@ fun RegistroCandidataScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            if (formulario.errorServidor != null) {
+                Text(
+                    text = formulario.errorServidor ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -218,7 +222,7 @@ fun RegistroCandidataScreen(
                 Text(text = "¡Registro Exitoso!")
             },
             text = {
-                Text(text = "La postulación ha sido guardada en la base de datos local (Room) con estado 'Pendiente de evaluación'.")
+                Text(text = "La postulación ha sido guardada en el servidor con estado 'Pendiente'.")
             },
             confirmButton = {
                 TextButton(

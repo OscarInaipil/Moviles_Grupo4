@@ -29,6 +29,12 @@ interface WimApiService {
     @DELETE("candidatas/{id}")
     suspend fun eliminarCandidata(@Path("id") id: Long): Response<Unit>
 
+    @GET("evaluaciones")
+    suspend fun obtenerEvaluaciones(): Response<List<Evaluacion>>
+
+    @GET("evaluaciones/candidata/{candidataId}")
+    suspend fun obtenerEvaluacionPorCandidata(@Path("candidataId") candidataId: Long): Response<Evaluacion>
+
     @POST("evaluaciones")
     suspend fun crearEvaluacion(@Body evaluacion: Evaluacion): Response<Evaluacion>
 

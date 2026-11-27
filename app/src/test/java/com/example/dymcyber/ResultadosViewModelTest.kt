@@ -1,41 +1,74 @@
 package com.example.dymcyber
 
-import android.app.Application
 import com.example.dymcyber.model.ResultadoEvaluacion
 import com.example.dymcyber.repository.EvaluacionRepository
 import com.example.dymcyber.viewmodel.ResultadosViewModel
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResultadosViewModelTest {
 
-    private lateinit var application: Application
     private lateinit var repository: EvaluacionRepository
     private lateinit var viewModel: ResultadosViewModel
 
     @Before
     fun configurar() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        application = mockk(relaxed = true)
         repository = mockk()
-        every { repository.resultadosConsolidados } returns flowOf(emptyList())
-        viewModel = ResultadosViewModel(application, repository)
+        viewModel = ResultadosViewModel(repository)
     }
 
     @After
     fun limpiar() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun cargarResultadosActualizaLaListaDelServidor() = runTest {
+        val lista = listOf(
+            ResultadoEvaluacion(
+                candidataId = 1,
+                nombre = "Candidata 1",
+                evaluadoraId = "EVA-1",
+                notaLiderazgo = 4,
+                notaTrayectoria = 4,
+                notaImpacto = 4,
+                notaInnovacion = 4,
+                puntajePromedio = 4.0,
+                observaciones = "Observacion 1",
+                fechaEvaluacion = 1000L
+            )
+        )
+        coEvery { repository.obtenerResultadosConsolidados() } returns lista
+
+        viewModel.cargarResultados()
+
+        assertEquals(1, viewModel.resultados.value?.size)
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
+    fun cargarResultadosMuestraErrorSiFallaElServidor() = runTest {
+        coEvery { repository.obtenerResultadosConsolidados() } throws IOException("sin conexion")
+
+        viewModel.cargarResultados()
+
+        assertEquals("No se pudieron cargar los resultados desde el servidor", viewModel.error.value)
+        assertTrue(viewModel.resultados.value?.isEmpty() == true)
     }
 
     @Test

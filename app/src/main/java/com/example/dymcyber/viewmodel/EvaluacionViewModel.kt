@@ -1,11 +1,9 @@
 package com.example.dymcyber.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dymcyber.model.Candidata
 import com.example.dymcyber.model.Evaluacion
-import com.example.dymcyber.repository.AppDatabase
 import com.example.dymcyber.repository.CandidataRepository
 import com.example.dymcyber.repository.EvaluacionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,53 +24,52 @@ data class MatrizEvaluacionState(
     val observacionesError: String? = null,
     val yaEvaluada: Boolean = false,
     val evaluacionExistente: Evaluacion? = null,
+    val errorServidor: String? = null,
     val guardadoExitoso: Boolean = false,
     val guardando: Boolean = false,
     val cargando: Boolean = true
 )
 
 class EvaluacionViewModel(
-    application: Application,
-    private val evaluacionRepository: EvaluacionRepository,
-    private val candidataRepository: CandidataRepository
-) : AndroidViewModel(application) {
-
-    constructor(application: Application) : this(
-        application,
-        EvaluacionRepository(
-            AppDatabase.getDatabase(application).evaluacionDao(),
-            AppDatabase.getDatabase(application).candidataDao()
-        ),
-        CandidataRepository(AppDatabase.getDatabase(application).candidataDao())
-    )
+    private val evaluacionRepository: EvaluacionRepository = EvaluacionRepository(),
+    private val candidataRepository: CandidataRepository = CandidataRepository()
+) : ViewModel() {
 
     private val _estado = MutableStateFlow(MatrizEvaluacionState())
     val estado: StateFlow<MatrizEvaluacionState> = _estado.asStateFlow()
 
-    fun cargarCandidata(candidataId: Long) {
+    fun cargarCandidata(candidataId: Long, codigoEvaluadoraDefecto: String = "") {
         viewModelScope.launch {
-            _estado.value = _estado.value.copy(cargando = true)
-            val candidata = candidataRepository.obtenerPorId(candidataId)
-            val evaluacionPrevia = evaluacionRepository.obtenerPorCandidataId(candidataId)
+            _estado.value = _estado.value.copy(cargando = true, errorServidor = null)
+            try {
+                val candidata = candidataRepository.obtenerPorId(candidataId)
+                val evaluacionPrevia = evaluacionRepository.obtenerPorCandidataId(candidataId)
 
-            if (evaluacionPrevia != null) {
+                if (evaluacionPrevia != null) {
+                    _estado.value = MatrizEvaluacionState(
+                        candidata = candidata,
+                        notaLiderazgo = evaluacionPrevia.notaLiderazgo,
+                        notaTrayectoria = evaluacionPrevia.notaTrayectoria,
+                        notaImpacto = evaluacionPrevia.notaImpacto,
+                        notaInnovacion = evaluacionPrevia.notaInnovacion,
+                        puntajePromedio = evaluacionPrevia.puntajePromedio,
+                        evaluadoraId = evaluacionPrevia.evaluadoraId,
+                        observaciones = evaluacionPrevia.observaciones,
+                        yaEvaluada = true,
+                        evaluacionExistente = evaluacionPrevia,
+                        cargando = false
+                    )
+                } else {
+                    _estado.value = MatrizEvaluacionState(
+                        candidata = candidata,
+                        evaluadoraId = codigoEvaluadoraDefecto,
+                        cargando = false
+                    )
+                }
+            } catch (e: Exception) {
                 _estado.value = MatrizEvaluacionState(
-                    candidata = candidata,
-                    notaLiderazgo = evaluacionPrevia.notaLiderazgo,
-                    notaTrayectoria = evaluacionPrevia.notaTrayectoria,
-                    notaImpacto = evaluacionPrevia.notaImpacto,
-                    notaInnovacion = evaluacionPrevia.notaInnovacion,
-                    puntajePromedio = evaluacionPrevia.puntajePromedio,
-                    evaluadoraId = evaluacionPrevia.evaluadoraId,
-                    observaciones = evaluacionPrevia.observaciones,
-                    yaEvaluada = true,
-                    evaluacionExistente = evaluacionPrevia,
-                    cargando = false
-                )
-            } else {
-                _estado.value = MatrizEvaluacionState(
-                    candidata = candidata,
-                    cargando = false
+                    cargando = false,
+                    errorServidor = "No se pudo conectar con el servidor"
                 )
             }
         }
@@ -101,14 +98,16 @@ class EvaluacionViewModel(
     fun onEvaluadoraIdChange(id: String) {
         _estado.value = _estado.value.copy(
             evaluadoraId = id,
-            evaluadoraIdError = null
+            evaluadoraIdError = null,
+            errorServidor = null
         )
     }
 
     fun onObservacionesChange(texto: String) {
         _estado.value = _estado.value.copy(
             observaciones = texto,
-            observacionesError = null
+            observacionesError = null,
+            errorServidor = null
         )
     }
 
@@ -118,7 +117,7 @@ class EvaluacionViewModel(
         return Math.round(promedio * 10.0) / 10.0
     }
 
-    fun validarYGuardarEvaluacion(): Boolean {
+    fun validarYGuardarEvaluacion(alGuardar: () -> Unit = {}): Boolean {
         val actual = _estado.value
         val candidata = actual.candidata ?: return false
 
@@ -152,7 +151,7 @@ class EvaluacionViewModel(
             return false
         }
 
-        _estado.value = actual.copy(guardando = true)
+        _estado.value = actual.copy(guardando = true, errorServidor = null)
 
         viewModelScope.launch {
             try {
@@ -167,19 +166,26 @@ class EvaluacionViewModel(
                     observaciones = actual.observaciones.trim()
                 )
 
-                val guardado = evaluacionRepository.guardarEvaluacion(evaluacion, candidata)
-                if (guardado) {
+                val guardada = evaluacionRepository.guardarEvaluacion(evaluacion)
+                if (guardada != null) {
                     _estado.value = _estado.value.copy(
                         guardadoExitoso = true,
                         yaEvaluada = true,
-                        evaluacionExistente = evaluacion,
+                        evaluacionExistente = guardada,
                         guardando = false
                     )
+                    alGuardar()
                 } else {
-                    _estado.value = _estado.value.copy(guardando = false)
+                    _estado.value = _estado.value.copy(
+                        guardando = false,
+                        errorServidor = "No se pudo guardar la evaluación en el servidor"
+                    )
                 }
             } catch (e: Exception) {
-                _estado.value = _estado.value.copy(guardando = false)
+                _estado.value = _estado.value.copy(
+                    guardando = false,
+                    errorServidor = "No se pudo conectar con el servidor"
+                )
             }
         }
 

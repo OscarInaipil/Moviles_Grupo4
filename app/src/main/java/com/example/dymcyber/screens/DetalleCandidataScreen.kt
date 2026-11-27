@@ -87,6 +87,7 @@ fun DetalleCandidataScreen(
 
     val candidata = viewModel.candidataSeleccionada.collectAsState().value
     val evaluacion = viewModel.evaluacionCandidata.collectAsState().value
+    val errorDetalle = viewModel.errorDetalle.collectAsState().value
 
     Scaffold(
         topBar = {
@@ -114,7 +115,13 @@ fun DetalleCandidataScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        if (candidata == null || candidata.id != candidataId) {
+        if (errorDetalle != null) {
+            MensajeErrorServidor(
+                mensaje = errorDetalle,
+                alReintentar = { viewModel.cargarCandidata(candidataId) },
+                modifier = Modifier.padding(innerPadding)
+            )
+        } else if (candidata == null || candidata.id != candidataId) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

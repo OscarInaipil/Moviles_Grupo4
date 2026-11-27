@@ -2,76 +2,62 @@ package com.example.dymcyber.repository
 
 import com.example.dymcyber.model.Candidata
 import com.example.dymcyber.model.Evaluacion
-import kotlinx.coroutines.flow.Flow
 
 class CandidataRepository(
-    private val candidataDao: CandidataDao,
-    private val evaluacionDao: EvaluacionDao? = null,
     private val apiService: WimApiService = RetrofitClient.wimApiService
 ) {
 
-    val todasLasCandidatas: Flow<List<Candidata>> = candidataDao.obtenerTodas()
-
-    suspend fun sincronizarConBackend() {
-        try {
-            val respuesta = apiService.obtenerCandidatas()
-            if (respuesta.isSuccessful) {
-                val remotas = respuesta.body().orEmpty()
-                for (candidata in remotas) {
-                    val local = candidataDao.obtenerPorId(candidata.id)
-                    if (local == null) {
-                        candidataDao.insertarCandidata(candidata)
-                    } else {
-                        candidataDao.actualizarCandidata(candidata)
-                    }
-                }
-            }
-        } catch (e: Exception) {
+    suspend fun obtenerTodas(): List<Candidata> {
+        val respuesta = apiService.obtenerCandidatas()
+        if (respuesta.isSuccessful) {
+            return respuesta.body().orEmpty()
         }
+        throw IllegalStateException("Error al obtener candidatas: ${respuesta.code()}")
     }
 
-    suspend fun insertar(candidata: Candidata): Long {
-        val idLocal = candidataDao.insertarCandidata(candidata)
-        try {
-            apiService.crearCandidata(candidata.copy(id = idLocal))
-        } catch (e: Exception) {
+    suspend fun insertar(candidata: Candidata): Candidata? {
+        val respuesta = apiService.crearCandidata(candidata)
+        return if (respuesta.isSuccessful) {
+            respuesta.body()
+        } else {
+            null
         }
-        return idLocal
     }
 
     suspend fun obtenerPorId(id: Long): Candidata? {
-        try {
-            val respuesta = apiService.obtenerCandidataPorId(id)
-            if (respuesta.isSuccessful && respuesta.body() != null) {
-                val remota = respuesta.body()!!
-                candidataDao.actualizarCandidata(remota)
-                return remota
-            }
-        } catch (e: Exception) {
+        val respuesta = apiService.obtenerCandidataPorId(id)
+        return if (respuesta.isSuccessful) {
+            respuesta.body()
+        } else {
+            null
         }
-        return candidataDao.obtenerPorId(id)
     }
 
-    suspend fun actualizar(candidata: Candidata): Int {
-        val resultadoLocal = candidataDao.actualizarCandidata(candidata)
-        try {
-            apiService.actualizarCandidata(candidata.id, candidata)
-        } catch (e: Exception) {
+    suspend fun actualizar(candidata: Candidata): Candidata? {
+        val respuesta = apiService.actualizarCandidata(candidata.id, candidata)
+        return if (respuesta.isSuccessful) {
+            respuesta.body()
+        } else {
+            null
         }
-        return resultadoLocal
     }
 
-    suspend fun eliminar(candidata: Candidata): Int {
-        val resultado = candidataDao.eliminarCandidata(candidata)
-        try {
-            apiService.eliminarCandidata(candidata.id)
-        } catch (e: Exception) {
-        }
-        return resultado
+    suspend fun eliminar(id: Long): Boolean {
+        val respuesta = apiService.eliminarCandidata(id)
+        return respuesta.isSuccessful
     }
 
     suspend fun obtenerEvaluacion(candidataId: Long): Evaluacion? {
-        return evaluacionDao?.obtenerPorCandidataId(candidataId)
+        return try {
+            val respuesta = apiService.obtenerEvaluacionPorCandidata(candidataId)
+            if (respuesta.isSuccessful) {
+                respuesta.body()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     suspend fun precargarCandidatasPrueba() {
@@ -96,9 +82,8 @@ class CandidataRepository(
             )
         )
         listaPrueba.forEach { candidata ->
-            val id = candidataDao.insertarCandidata(candidata)
             try {
-                apiService.crearCandidata(candidata.copy(id = id))
+                apiService.crearCandidata(candidata)
             } catch (e: Exception) {
             }
         }

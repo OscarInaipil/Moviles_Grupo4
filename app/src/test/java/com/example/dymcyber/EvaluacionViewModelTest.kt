@@ -1,6 +1,5 @@
 package com.example.dymcyber
 
-import android.app.Application
 import com.example.dymcyber.model.Candidata
 import com.example.dymcyber.model.Evaluacion
 import com.example.dymcyber.repository.CandidataRepository
@@ -22,11 +21,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EvaluacionViewModelTest {
 
-    private lateinit var application: Application
     private lateinit var evaluacionRepository: EvaluacionRepository
     private lateinit var candidataRepository: CandidataRepository
     private lateinit var viewModel: EvaluacionViewModel
@@ -53,10 +52,9 @@ class EvaluacionViewModelTest {
     @Before
     fun configurar() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        application = mockk(relaxed = true)
         evaluacionRepository = mockk(relaxed = true)
         candidataRepository = mockk(relaxed = true)
-        viewModel = EvaluacionViewModel(application, evaluacionRepository, candidataRepository)
+        viewModel = EvaluacionViewModel(evaluacionRepository, candidataRepository)
     }
 
     @After
@@ -65,16 +63,17 @@ class EvaluacionViewModelTest {
     }
 
     @Test
-    fun cargarCandidataSinEvaluacionDejaElEstadoListoParaEvaluar() = runTest {
+    fun cargarCandidataSinEvaluacionPreviaUsaCodigoEvaluadoraPorDefecto() = runTest {
         coEvery { candidataRepository.obtenerPorId(2L) } returns candidata
         coEvery { evaluacionRepository.obtenerPorCandidataId(2L) } returns null
 
-        viewModel.cargarCandidata(2L)
+        viewModel.cargarCandidata(2L, "EVA-01")
 
         val estado = viewModel.estado.value
         assertFalse(estado.cargando)
         assertFalse(estado.yaEvaluada)
         assertEquals(candidata, estado.candidata)
+        assertEquals("EVA-01", estado.evaluadoraId)
     }
 
     @Test
@@ -82,13 +81,23 @@ class EvaluacionViewModelTest {
         coEvery { candidataRepository.obtenerPorId(2L) } returns candidata
         coEvery { evaluacionRepository.obtenerPorCandidataId(2L) } returns evaluacionExistente
 
-        viewModel.cargarCandidata(2L)
+        viewModel.cargarCandidata(2L, "EVA-01")
 
         val estado = viewModel.estado.value
         assertFalse(estado.cargando)
         assertTrue(estado.yaEvaluada)
         assertEquals(5.0, estado.puntajePromedio, 0.01)
         assertEquals("EVA-02", estado.evaluadoraId)
+    }
+
+    @Test
+    fun cargarCandidataSinConexionMuestraErrorServidor() = runTest {
+        coEvery { candidataRepository.obtenerPorId(2L) } throws IOException("sin conexion")
+
+        viewModel.cargarCandidata(2L)
+
+        assertFalse(viewModel.estado.value.cargando)
+        assertEquals("No se pudo conectar con el servidor", viewModel.estado.value.errorServidor)
     }
 
     @Test
@@ -121,17 +130,35 @@ class EvaluacionViewModelTest {
     fun validarYGuardarGuardaExitosamenteConDatosValidos() = runTest {
         coEvery { candidataRepository.obtenerPorId(2L) } returns candidata
         coEvery { evaluacionRepository.obtenerPorCandidataId(2L) } returns null
-        coEvery { evaluacionRepository.guardarEvaluacion(any(), any()) } returns true
+        coEvery { evaluacionRepository.guardarEvaluacion(any()) } returns evaluacionExistente
         viewModel.cargarCandidata(2L)
 
         viewModel.onEvaluadoraIdChange("EVA-09")
         viewModel.onObservacionesChange("Excelente perfil con amplia experiencia")
 
-        val resultado = viewModel.validarYGuardarEvaluacion()
+        var callbackEjecutado = false
+        val resultado = viewModel.validarYGuardarEvaluacion { callbackEjecutado = true }
 
         assertTrue(resultado)
         assertTrue(viewModel.estado.value.guardadoExitoso)
         assertTrue(viewModel.estado.value.yaEvaluada)
-        coVerify { evaluacionRepository.guardarEvaluacion(any(), any()) }
+        assertTrue(callbackEjecutado)
+        coVerify { evaluacionRepository.guardarEvaluacion(any()) }
+    }
+
+    @Test
+    fun validarYGuardarMuestraErrorSiElServidorFalla() = runTest {
+        coEvery { candidataRepository.obtenerPorId(2L) } returns candidata
+        coEvery { evaluacionRepository.obtenerPorCandidataId(2L) } returns null
+        coEvery { evaluacionRepository.guardarEvaluacion(any()) } returns null
+        viewModel.cargarCandidata(2L)
+
+        viewModel.onEvaluadoraIdChange("EVA-09")
+        viewModel.onObservacionesChange("Excelente perfil con amplia experiencia")
+
+        viewModel.validarYGuardarEvaluacion()
+
+        assertFalse(viewModel.estado.value.guardadoExitoso)
+        assertNotNull(viewModel.estado.value.errorServidor)
     }
 }

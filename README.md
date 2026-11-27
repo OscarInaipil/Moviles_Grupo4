@@ -10,7 +10,7 @@
 ## 1. Nombre y descripción del proyecto
 **DYM Cyber · WIM 100** es una aplicación móvil Android que digitaliza, ordena y centraliza el proceso de postulación y evaluación de candidatas para el reconocimiento **WIM 100** (Woman and Mining).
 
-Permite a las evaluadoras registrar y consultar postulantes, revisar sus antecedentes (CV y enlaces a perfiles profesionales simulados), aplicar una matriz homogénea de evaluación con criterios objetivos, justificar las calificaciones con trazabilidad y prevenir evaluaciones duplicadas. Los datos se guardan en el teléfono con Room y se sincronizan con un microservicio propio en Spring Boot con PostgreSQL. Además, la pantalla principal muestra indicadores económicos ligados a la minería obtenidos desde una API externa.
+Permite a las evaluadoras iniciar sesión, registrar y consultar postulantes, revisar sus antecedentes (CV y enlaces a perfiles profesionales simulados), aplicar una matriz homogénea de evaluación con criterios objetivos, justificar las calificaciones con trazabilidad y prevenir evaluaciones duplicadas. Toda la información se persiste directamente en PostgreSQL mediante un microservicio propio en Spring Boot consumido vía Retrofit. Además, la pantalla principal muestra indicadores económicos ligados a la minería obtenidos desde una API externa.
 
 > [!NOTE]
 > Todo el sistema opera exclusivamente con **datos ficticios, sintéticos y anonimizados**, cumpliendo con los estándares de privacidad y alcances del caso académico.
@@ -73,8 +73,8 @@ Moviles_Grupo4/
     ├── release/                 # APK release firmado
     └── src/
         ├── main/java/com/example/dymcyber/
-        │   ├── model/           # Entidades Room y modelos de datos
-        │   ├── repository/      # Room, DAOs, repositorios y clientes Retrofit
+        │   ├── model/           # Modelos y DTOs de datos
+        │   ├── repository/      # Repositorios y clientes Retrofit
         │   ├── viewmodel/       # Lógica de negocio y estados de cada pantalla
         │   └── screens/         # Pantallas en Jetpack Compose con Material Design 3
         └── test/                # Pruebas unitarias con JUnit, MockK y coroutines-test
@@ -83,7 +83,7 @@ Moviles_Grupo4/
 El microservicio backend en Spring Boot se encuentra en el repositorio separado: [Moviles_Backend_Grupo4](https://github.com/OscarInaipil/Moviles_Backend_Grupo4).
 
 ### Tecnologías utilizadas
-* **App móvil:** Kotlin, Jetpack Compose con Material Design 3, Navigation Compose, ViewModel con StateFlow, Room (SQLite) con KSP.
+* **App móvil:** Kotlin, Jetpack Compose con Material Design 3, Navigation Compose, ViewModel con StateFlow.
 * **Consumo de APIs:** Retrofit 3 y Gson.
 * **Microservicio:** Java 17, Spring Boot 4, Spring Data JPA y PostgreSQL (repositorio independiente).
 * **Pruebas unitarias:** JUnit 4, MockK y kotlinx-coroutines-test.
@@ -142,12 +142,13 @@ También se pueden ejecutar desde Android Studio con clic derecho sobre `app/src
 
 | Clase de prueba | Qué valida |
 | :--- | :--- |
-| `CandidataRepositoryTest` | Registro, sincronización, actualización y eliminación de candidatas con el backend simulado |
+| `CandidataRepositoryTest` | Consulta, registro, actualización y eliminación de candidatas vía Retrofit |
+| `CandidataViewModelTest` | Carga de listado, validaciones del registro, adjunto de CV y eliminación |
 | `IndicadoresRepositoryTest` | Respuestas correctas, errores y falta de conexión de la API externa |
 | `IndicadoresViewModelTest` | Carga de indicadores, mensajes de error y reintento |
-| `EvaluacionRepositoryTest` | Guardado de evaluaciones en local y en el backend, y bloqueo de duplicados |
+| `EvaluacionRepositoryTest` | Envío, consulta por candidata y consolidación de resultados |
 | `EvaluacionViewModelTest` | Carga de la candidata, recálculo del promedio y validaciones de la matriz |
-| `ResultadosViewModelTest` | Cálculo del promedio general de los resultados |
+| `ResultadosViewModelTest` | Carga desde el servidor y cálculo del promedio general de los resultados |
 | `CalculoEvaluacionTest` | Cálculo y redondeo de promedios |
 | `ValidacionFormulariosTest` | Reglas de validación de los formularios |
 | `LoginViewModelTest` | Validaciones del login, ingreso correcto, credenciales incorrectas, falta de conexión y cierre de sesión |
