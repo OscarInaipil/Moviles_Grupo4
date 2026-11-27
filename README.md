@@ -68,28 +68,24 @@ La API externa se consume con un cliente Retrofit independiente (`IndicadoresRet
 
 ```text
 Moviles_Grupo4/
-├── app/                         # Aplicación Android (Kotlin + Jetpack Compose, MVVM)
-│   ├── keystore/dymcyber.jks    # Llave para firmar el APK
-│   ├── release/                 # APK release firmado
-│   └── src/
-│       ├── main/java/com/example/dymcyber/
-│       │   ├── model/           # Entidades Room y modelos de datos
-│       │   ├── repository/      # Room, DAOs, repositorios y clientes Retrofit
-│       │   ├── viewmodel/       # Lógica de negocio y estados de cada pantalla
-│       │   └── screens/         # Pantallas en Jetpack Compose con Material Design 3
-│       └── test/                # Pruebas unitarias con JUnit, MockK y coroutines-test
-└── backend/                     # Microservicio Spring Boot con PostgreSQL
-    └── src/main/java/com/example/dymcyber/
-        ├── model/               # Entidades JPA (CandidataEntity, EvaluacionEntity, UsuarioEntity)
-        ├── repository/          # Repositorios JPA
-        ├── controller/          # Controladores REST
-        └── util/                # Encriptación de contraseñas
+└── app/                         # Aplicación Android (Kotlin + Jetpack Compose, MVVM)
+    ├── keystore/dymcyber.jks    # Llave para firmar el APK
+    ├── release/                 # APK release firmado
+    └── src/
+        ├── main/java/com/example/dymcyber/
+        │   ├── model/           # Entidades Room y modelos de datos
+        │   ├── repository/      # Room, DAOs, repositorios y clientes Retrofit
+        │   ├── viewmodel/       # Lógica de negocio y estados de cada pantalla
+        │   └── screens/         # Pantallas en Jetpack Compose con Material Design 3
+        └── test/                # Pruebas unitarias con JUnit, MockK y coroutines-test
 ```
+
+El microservicio backend en Spring Boot se encuentra en el repositorio separado: [Moviles_Backend_Grupo4](https://github.com/OscarInaipil/Moviles_Backend_Grupo4).
 
 ### Tecnologías utilizadas
 * **App móvil:** Kotlin, Jetpack Compose con Material Design 3, Navigation Compose, ViewModel con StateFlow, Room (SQLite) con KSP.
 * **Consumo de APIs:** Retrofit 3 y Gson.
-* **Microservicio:** Java 17, Spring Boot 4, Spring Data JPA y PostgreSQL.
+* **Microservicio:** Java 17, Spring Boot 4, Spring Data JPA y PostgreSQL (repositorio independiente).
 * **Pruebas unitarias:** JUnit 4, MockK y kotlinx-coroutines-test.
 * **Planificación y versiones:** GitHub y Trello.
 
@@ -99,6 +95,7 @@ Moviles_Grupo4/
 
 ### Requisitos
 * Android Studio (versión Ladybug o superior).
+* IntelliJ IDEA (para ejecutar el microservicio Spring Boot).
 * JDK 17 o superior.
 * PostgreSQL corriendo en el puerto `5432`.
 
@@ -107,14 +104,15 @@ Crear la base de datos que usa el microservicio:
 ```sql
 CREATE DATABASE wim100_db;
 ```
-El usuario y la contraseña se configuran en `backend/src/main/resources/application.properties` (por defecto `postgres` / `postgres`). Las tablas se crean solas al iniciar el backend.
+El usuario y la contraseña se configuran en `src/main/resources/application.properties` dentro del repositorio del backend (por defecto `postgres` / `postgres`). Las tablas se crean solas al iniciar el backend.
 
 ### 6.2 Microservicio
 ```bash
-cd backend
+git clone https://github.com/OscarInaipil/Moviles_Backend_Grupo4.git
+cd Moviles_Backend_Grupo4
 mvnw.cmd spring-boot:run
 ```
-En Linux o macOS se usa `./mvnw spring-boot:run`. El backend queda disponible en `http://localhost:8080` y, la primera vez, carga tres candidatas y dos evaluadoras de prueba.
+También se puede abrir la carpeta `Moviles_Backend_Grupo4` directamente en **IntelliJ IDEA** y ejecutar `WimBackendApplication`. En Linux o macOS se usa `./mvnw spring-boot:run`. El backend queda disponible en `http://localhost:8080` y, la primera vez, carga tres candidatas y dos evaluadoras de prueba.
 
 ### 6.3 Aplicación móvil
 1. Clonar el repositorio:
