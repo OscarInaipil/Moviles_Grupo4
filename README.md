@@ -149,8 +149,6 @@ También se pueden ejecutar desde Android Studio con clic derecho sobre `app/src
 | `EvaluacionRepositoryTest` | Envío, consulta por candidata y consolidación de resultados |
 | `EvaluacionViewModelTest` | Carga de la candidata, recálculo del promedio y validaciones de la matriz |
 | `ResultadosViewModelTest` | Carga desde el servidor y cálculo del promedio general de los resultados |
-| `CalculoEvaluacionTest` | Cálculo y redondeo de promedios |
-| `ValidacionFormulariosTest` | Reglas de validación de los formularios |
 | `LoginViewModelTest` | Validaciones del login, ingreso correcto, credenciales incorrectas, falta de conexión y cierre de sesión |
 | `UsuarioRepositoryTest` | Respuesta del backend al iniciar sesión |
 
